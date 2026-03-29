@@ -1,0 +1,139 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Black and White Theme with Grey Accents */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 4%;
+    
+    --card: 0 0% 99%;
+    --card-foreground: 0 0% 4%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 4%;
+    
+    --primary: 0 0% 6%;
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 12%;
+    
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 46%;
+    
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 98%;
+    
+    --destructive: 0 0% 12%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 0 0% 91%;
+    --input: 0 0% 91%;
+    --ring: 0 0% 6%;
+    
+    --radius: 0.5rem;
+    
+    /* Modern Grey Gradient Scale */
+    --grey-50: 0 0% 98%;
+    --grey-100: 0 0% 95%;
+    --grey-200: 0 0% 88%;
+    --grey-300: 0 0% 75%;
+    --grey-400: 0 0% 60%;
+    --grey-500: 0 0% 45%;
+    --grey-600: 0 0% 35%;
+    --grey-700: 0 0% 25%;
+    --grey-800: 0 0% 15%;
+    --grey-900: 0 0% 8%;
+    
+    /* Status Colors - Premium Grey Theme */
+    --success: 0 0% 25%;
+    --success-foreground: 0 0% 98%;
+    --warning: 0 0% 30%;
+    --warning-foreground: 0 0% 98%;
+    --info: 0 0% 35%;
+    --info-foreground: 0 0% 98%;
+  }
+
+  .dark {
+    /* Dark mode variants */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 96%;
+    
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 96%;
+    
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 96%;
+    
+    --primary: 0 0% 96%;
+    --primary-foreground: 0 0% 6%;
+    
+    --secondary: 0 0% 11%;
+    --secondary-foreground: 0 0% 88%;
+    
+    --muted: 0 0% 11%;
+    --muted-foreground: 0 0% 58%;
+    
+    --accent: 0 0% 25%;
+    --accent-foreground: 0 0% 96%;
+    
+    --destructive: 0 0% 20%;
+    --destructive-foreground: 0 0% 96%;
+    
+    --border: 0 0% 14%;
+    --input: 0 0% 14%;
+    --ring: 0 0% 90%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'DM Sans', sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Custom scrollbar */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 2px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
