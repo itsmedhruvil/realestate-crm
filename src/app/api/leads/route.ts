@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/mariadb";
+import { ResultSetHeader } from "mysql2/promise";
 
 export async function GET() {
   try {
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
       body.agent,
       body.source,
       body.notes
-    ]);
+    ]) as ResultSetHeader;
     
     const newLead = await query(`
       SELECT 
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
         created_at as date
       FROM leads 
       WHERE id = ?
-    `, [result.insertId]);
+    `, [result.insertId]) as any[];
     
     return NextResponse.json({ data: newLead[0] }, { status: 201 });
   } catch (error) {

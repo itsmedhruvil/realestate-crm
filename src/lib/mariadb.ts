@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 
 // Database connection configuration
-const dbConfig = {
+const dbConfig: mysql.PoolOptions = {
   host: process.env.MARIADB_HOST || 'localhost',
   port: parseInt(process.env.MARIADB_PORT || '3306'),
   user: process.env.MARIADB_USER || 'root',
@@ -12,7 +12,7 @@ const dbConfig = {
   queueLimit: 0,
   ssl: process.env.NODE_ENV === 'production' ? {
     rejectUnauthorized: true
-  } : false
+  } : undefined
 };
 
 // Create connection pool
