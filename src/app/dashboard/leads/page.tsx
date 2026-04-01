@@ -44,12 +44,12 @@ export default function LeadsPage() {
         <div className="lg:col-span-2 grid grid-cols-3 gap-3">
           {[
             { label: "Total Leads", value: leads.length.toString() },
-            { label: "Hot Leads", value: leads.filter((l) => l.stage === "Hot").length.toString(), className: "text-red-400" },
+            { label: "Hot Leads", value: leads.filter((l) => l.stage === "Hot").length.toString() },
             { label: "Avg Score", value: Math.round(leads.reduce((a, l) => a + l.score, 0) / leads.length).toString() },
           ].map((s) => (
             <div key={s.label} className="bg-card border border-border rounded-xl p-4">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
-              <p className={`text-2xl font-medium tracking-tight ${s.className || "text-foreground"}`}>{s.value}</p>
+              <p className="text-2xl font-medium tracking-tight text-foreground">{s.value}</p>
             </div>
           ))}
         </div>
@@ -57,9 +57,9 @@ export default function LeadsPage() {
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Pipeline Distribution</p>
           <ResponsiveContainer width="100%" height={80}>
             <BarChart data={leadsByStageData} barSize={20}>
-              <XAxis dataKey="stage" tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: "#1a1a1a", border: "1px solid #333", borderRadius: 8, fontSize: 12 }} />
-              <Bar dataKey="count" fill="rgba(245,245,245,0.2)" radius={[3, 3, 0, 0]} />
+              <XAxis dataKey="stage" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--foreground))" }} />
+              <Bar dataKey="count" fill="hsl(var(--foreground))" fillOpacity={0.2} radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -171,7 +171,7 @@ export default function LeadsPage() {
       {/* Lead Detail Modal */}
       {selected && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSelected(null)}>
-          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-background border border-border rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-base font-medium text-foreground">Lead Details</h2>
               <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground text-xl">×</button>

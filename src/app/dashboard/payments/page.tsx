@@ -25,9 +25,9 @@ const collectionData = [
 ];
 
 const statusConfig: Record<string, { icon: React.ElementType; className: string; bgClassName: string; label: string }> = {
-  overdue: { icon: AlertCircle, className: "text-red-400 bg-red-950/50", bgClassName: "bg-red-950/30", label: "Overdue" },
-  upcoming: { icon: Clock, className: "text-amber-400 bg-amber-950/50", bgClassName: "bg-amber-950/20", label: "Due Soon" },
-  scheduled: { icon: CheckCircle2, className: "text-blue-400 bg-blue-950/50", bgClassName: "bg-blue-950/20", label: "Upcoming" },
+  overdue: { icon: AlertCircle, className: "text-foreground bg-muted", bgClassName: "bg-muted", label: "Overdue" },
+  upcoming: { icon: Clock, className: "text-foreground bg-muted", bgClassName: "bg-muted", label: "Due Soon" },
+  scheduled: { icon: CheckCircle2, className: "text-foreground bg-muted", bgClassName: "bg-muted", label: "Upcoming" },
 };
 
 export default function PaymentsPage() {
@@ -41,13 +41,13 @@ export default function PaymentsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "Total Receivable", value: "₹1.8Cr", sub: "12 payments pending" },
-          { label: "Overdue", value: "₹34L", sub: "3 overdue payments", className: "text-red-400" },
-          { label: "Due This Month", value: "₹1.14Cr", sub: "Next 30 days", className: "text-amber-400" },
-          { label: "Collected (Mar)", value: "₹62L", sub: "+18% vs last month", className: "text-green-400" },
+          { label: "Overdue", value: "₹34L", sub: "3 overdue payments" },
+          { label: "Due This Month", value: "₹1.14Cr", sub: "Next 30 days" },
+          { label: "Collected (Mar)", value: "₹62L", sub: "+18% vs last month" },
         ].map((s) => (
           <div key={s.label} className="bg-card border border-border rounded-xl p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
-            <p className={`text-2xl font-medium tracking-tight ${s.className || "text-foreground"}`}>{s.value}</p>
+            <p className="text-2xl font-medium tracking-tight text-foreground">{s.value}</p>
             <p className="text-xs text-muted-foreground mt-1.5">{s.sub}</p>
           </div>
         ))}
@@ -61,12 +61,12 @@ export default function PaymentsPage() {
         </div>
         <ResponsiveContainer width="100%" height={140}>
           <BarChart data={collectionData} barGap={4}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#222" />
-            <XAxis dataKey="month" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ background: "#1a1a1a", border: "1px solid #333", borderRadius: 8, fontSize: 12 }} />
-            <Bar dataKey="target" fill="rgba(255,255,255,0.08)" radius={[3, 3, 0, 0]} name="Target" />
-            <Bar dataKey="collected" fill="rgba(255,255,255,0.5)" radius={[3, 3, 0, 0]} name="Collected" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--foreground))" }} />
+            <Bar dataKey="target" fill="hsl(var(--foreground))" fillOpacity={0.08} radius={[3, 3, 0, 0]} name="Target" />
+            <Bar dataKey="collected" fill="hsl(var(--foreground))" fillOpacity={0.5} radius={[3, 3, 0, 0]} name="Collected" />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -112,7 +112,7 @@ export default function PaymentsPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-semibold text-foreground">{p.amount}</p>
-                  <p className={`text-xs mt-0.5 ${p.status === "overdue" ? "text-red-400" : p.status === "upcoming" ? "text-amber-400" : "text-muted-foreground"}`}>
+                  <p className="text-xs mt-0.5 text-muted-foreground">
                     Due: {p.due}
                     {p.status === "overdue" && ` · ${p.daysOverdue}d overdue`}
                   </p>

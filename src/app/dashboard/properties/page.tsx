@@ -12,20 +12,20 @@ const priceRangeData = [
 ];
 
 const properties = [
-  { id: 1, name: "Prestige Skyline", location: "Bandra West, Mumbai", price: "₹2.4Cr", type: "3 BHK Apartment", status: "available", beds: 3, baths: 3, sqft: 1850, agent: "Arjun K", bg: "#0d1520" },
-  { id: 2, name: "Green Valley Villa", location: "Whitefield, Bengaluru", price: "₹3.8Cr", type: "4 BHK Villa", status: "reserved", beds: 4, baths: 4, sqft: 3200, agent: "Nisha P", bg: "#0d200d" },
-  { id: 3, name: "Sunrise Heights", location: "Andheri East, Mumbai", price: "₹85L", type: "2 BHK Apartment", status: "available", beds: 2, baths: 2, sqft: 1100, agent: "Vikram S", bg: "#1a100a" },
-  { id: 4, name: "Metro Suites", location: "Koramangala, Bengaluru", price: "₹1.1Cr", type: "2.5 BHK", status: "sold", beds: 3, baths: 2, sqft: 1450, agent: "Meera R", bg: "#100d1a" },
-  { id: 5, name: "Horizon Residency", location: "Powai, Mumbai", price: "₹1.6Cr", type: "3 BHK Penthouse", status: "available", beds: 3, baths: 3, sqft: 2100, agent: "Arjun K", bg: "#0a101a" },
-  { id: 6, name: "The Grand Palms", location: "Sarjapur, Bengaluru", price: "₹5.2Cr", type: "5 BHK Luxury Villa", status: "available", beds: 5, baths: 5, sqft: 5800, agent: "Nisha P", bg: "#100d0a" },
-  { id: 7, name: "Serene Enclave", location: "Hebbal, Bengaluru", price: "₹72L", type: "2 BHK Apartment", status: "available", beds: 2, baths: 2, sqft: 980, agent: "Karan D", bg: "#0d1a1a" },
-  { id: 8, name: "Silver Oak Residency", location: "Thane, Mumbai", price: "₹1.3Cr", type: "3 BHK", status: "reserved", beds: 3, baths: 2, sqft: 1620, agent: "Sneha K", bg: "#1a1505" },
+  { id: 1, name: "Prestige Skyline", location: "Bandra West, Mumbai", price: "₹2.4Cr", type: "3 BHK Apartment", status: "available", beds: 3, baths: 3, sqft: 1850, agent: "Arjun K" },
+  { id: 2, name: "Green Valley Villa", location: "Whitefield, Bengaluru", price: "₹3.8Cr", type: "4 BHK Villa", status: "reserved", beds: 4, baths: 4, sqft: 3200, agent: "Nisha P" },
+  { id: 3, name: "Sunrise Heights", location: "Andheri East, Mumbai", price: "₹85L", type: "2 BHK Apartment", status: "available", beds: 2, baths: 2, sqft: 1100, agent: "Vikram S" },
+  { id: 4, name: "Metro Suites", location: "Koramangala, Bengaluru", price: "₹1.1Cr", type: "2.5 BHK", status: "sold", beds: 3, baths: 2, sqft: 1450, agent: "Meera R" },
+  { id: 5, name: "Horizon Residency", location: "Powai, Mumbai", price: "₹1.6Cr", type: "3 BHK Penthouse", status: "available", beds: 3, baths: 3, sqft: 2100, agent: "Arjun K" },
+  { id: 6, name: "The Grand Palms", location: "Sarjapur, Bengaluru", price: "₹5.2Cr", type: "5 BHK Luxury Villa", status: "available", beds: 5, baths: 5, sqft: 5800, agent: "Nisha P" },
+  { id: 7, name: "Serene Enclave", location: "Hebbal, Bengaluru", price: "₹72L", type: "2 BHK Apartment", status: "available", beds: 2, baths: 2, sqft: 980, agent: "Karan D" },
+  { id: 8, name: "Silver Oak Residency", location: "Thane, Mumbai", price: "₹1.3Cr", type: "3 BHK", status: "reserved", beds: 3, baths: 2, sqft: 1620, agent: "Sneha K" },
 ];
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  available: { label: "Available", className: "text-green-400 bg-green-950/50" },
-  reserved: { label: "Reserved", className: "text-amber-400 bg-amber-950/50" },
-  sold: { label: "Sold", className: "text-zinc-400 bg-zinc-800" },
+  available: { label: "Available", className: "text-foreground bg-muted" },
+  reserved: { label: "Reserved", className: "text-foreground bg-muted" },
+  sold: { label: "Sold", className: "text-muted-foreground bg-muted" },
 };
 
 export default function PropertiesPage() {
@@ -45,13 +45,13 @@ export default function PropertiesPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "Total Listings", value: "24" },
-          { label: "Available", value: "16", className: "text-green-400" },
-          { label: "Reserved", value: "5", className: "text-amber-400" },
-          { label: "Sold (This FY)", value: "3", className: "text-zinc-400" },
+          { label: "Available", value: "16" },
+          { label: "Reserved", value: "5" },
+          { label: "Sold (This FY)", value: "3" },
         ].map((s) => (
           <div key={s.label} className="bg-card border border-border rounded-xl p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
-            <p className={`text-2xl font-medium tracking-tight ${s.className || "text-foreground"}`}>{s.value}</p>
+            <p className="text-2xl font-medium tracking-tight text-foreground">{s.value}</p>
           </div>
         ))}
       </div>
@@ -61,11 +61,11 @@ export default function PropertiesPage() {
         <h3 className="text-sm font-medium text-foreground mb-4">Listings by Price Range</h3>
         <ResponsiveContainer width="100%" height={120}>
           <BarChart data={priceRangeData} barSize={28}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#222" />
-            <XAxis dataKey="range" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ background: "#1a1a1a", border: "1px solid #333", borderRadius: 8, fontSize: 12 }} />
-            <Bar dataKey="count" fill="rgba(245,245,245,0.15)" radius={[4, 4, 0, 0]} name="Properties" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="range" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--foreground))" }} />
+            <Bar dataKey="count" fill="hsl(var(--foreground))" fillOpacity={0.15} radius={[4, 4, 0, 0]} name="Properties" />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -77,7 +77,7 @@ export default function PropertiesPage() {
           <input
             value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Search properties..."
-            className="w-full pl-9 pr-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:border-zinc-600 placeholder:text-muted-foreground"
+            className="w-full pl-9 pr-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:border-foreground placeholder:text-muted-foreground"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -102,17 +102,17 @@ export default function PropertiesPage() {
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filtered.map((p) => (
-          <div key={p.id} className="bg-card border border-border rounded-xl overflow-hidden hover:border-zinc-600 transition-colors cursor-pointer group">
-            <div className="h-40 flex items-center justify-center relative" style={{ background: p.bg }}>
-              <Building2 className="w-12 h-12 text-white/10" />
+          <div key={p.id} className="bg-card border border-border rounded-xl overflow-hidden hover:border-foreground/50 transition-colors cursor-pointer group">
+            <div className="h-40 flex flex-col items-center justify-center relative border-b border-border">
+              <Building2 className="w-12 h-12 text-foreground/20" />
               <div className="absolute top-3 left-3">
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusConfig[p.status].className}`}>
                   {statusConfig[p.status].label}
                 </span>
               </div>
               <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                <button className="w-7 h-7 bg-black/60 rounded-md flex items-center justify-center"><Eye className="w-3 h-3 text-white" /></button>
-                <button className="w-7 h-7 bg-black/60 rounded-md flex items-center justify-center"><Edit2 className="w-3 h-3 text-white" /></button>
+                <button className="w-7 h-7 bg-foreground/70 rounded-md flex items-center justify-center"><Eye className="w-3 h-3 text-background" /></button>
+                <button className="w-7 h-7 bg-foreground/70 rounded-md flex items-center justify-center"><Edit2 className="w-3 h-3 text-background" /></button>
               </div>
             </div>
             <div className="p-4">
@@ -139,7 +139,7 @@ export default function PropertiesPage() {
       {/* Add Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowModal(false)}>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-background border border-border rounded-2xl p-6 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-base font-medium text-foreground">Add New Property</h2>
               <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground text-xl leading-none">×</button>
@@ -148,20 +148,20 @@ export default function PropertiesPage() {
               {[["Property Name", "e.g. Prestige Skyline"], ["Location", "City, Area"], ["Price", "e.g. ₹1.2Cr"]].map(([label, placeholder]) => (
                 <div key={label}>
                   <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">{label}</label>
-                  <input placeholder={placeholder} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500" />
+                  <input placeholder={placeholder} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground" />
                 </div>
               ))}
               <div className="grid grid-cols-3 gap-3">
                 {[["Bedrooms", "3"], ["Bathrooms", "2"], ["Sq. ft.", "1500"]].map(([label, placeholder]) => (
                   <div key={label}>
                     <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">{label}</label>
-                    <input placeholder={placeholder} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500" />
+                    <input placeholder={placeholder} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground" />
                   </div>
                 ))}
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Status</label>
-                <select className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none">
+                <select className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none">
                   <option>Available</option><option>Reserved</option><option>Sold</option>
                 </select>
               </div>

@@ -14,14 +14,14 @@ const actTypeData = [
 ];
 
 const activityFeed = [
-  { id: 1, text: "Called Priya Sharma re: Prestige Skyline viewing", agent: "Arjun K", time: "2 hours ago", icon: Phone, iconBg: "bg-blue-950/50", iconColor: "text-blue-400" },
-  { id: 2, text: "Site visit completed — Green Valley Villa with Rahul Mehta", agent: "Nisha P", time: "4 hours ago", icon: Home, iconBg: "bg-green-950/50", iconColor: "text-green-400" },
-  { id: 3, text: "Follow-up note added for Kavita Joshi — prefers ground floor villa", agent: "Meera R", time: "5 hours ago", icon: FileText, iconBg: "bg-zinc-800", iconColor: "text-zinc-400" },
-  { id: 4, text: "Deal closed! Metro Suites — Ravi Malhotra ₹1.1Cr", agent: "Vikram S", time: "Yesterday", icon: CheckCircle2, iconBg: "bg-green-950/50", iconColor: "text-green-400" },
-  { id: 5, text: "New lead assigned — Ravi Malhotra (2.5 BHK, ₹95L)", agent: "Arjun K", time: "Yesterday", icon: UserPlus, iconBg: "bg-blue-950/50", iconColor: "text-blue-400" },
-  { id: 6, text: "Payment reminder sent to Deepak Gupta — ₹6.5L due Apr 5", agent: "Nisha P", time: "2 days ago", icon: DollarSign, iconBg: "bg-amber-950/50", iconColor: "text-amber-400" },
-  { id: 7, text: "Site visit scheduled — Horizon Residency with Pooja Nair", agent: "Arjun K", time: "2 days ago", icon: Calendar, iconBg: "bg-purple-950/50", iconColor: "text-purple-400" },
-  { id: 8, text: "Follow-up call — Amit Verma, interested in studio apartment", agent: "Nisha P", time: "3 days ago", icon: Phone, iconBg: "bg-blue-950/50", iconColor: "text-blue-400" },
+  { id: 1, text: "Called Priya Sharma re: Prestige Skyline viewing", agent: "Arjun K", time: "2 hours ago", icon: Phone, iconBg: "bg-muted", iconColor: "text-foreground" },
+  { id: 2, text: "Site visit completed — Green Valley Villa with Rahul Mehta", agent: "Nisha P", time: "4 hours ago", icon: Home, iconBg: "bg-muted", iconColor: "text-foreground" },
+  { id: 3, text: "Follow-up note added for Kavita Joshi — prefers ground floor villa", agent: "Meera R", time: "5 hours ago", icon: FileText, iconBg: "bg-muted", iconColor: "text-foreground" },
+  { id: 4, text: "Deal closed! Metro Suites — Ravi Malhotra ₹1.1Cr", agent: "Vikram S", time: "Yesterday", icon: CheckCircle2, iconBg: "bg-muted", iconColor: "text-foreground" },
+  { id: 5, text: "New lead assigned — Ravi Malhotra (2.5 BHK, ₹95L)", agent: "Arjun K", time: "Yesterday", icon: UserPlus, iconBg: "bg-muted", iconColor: "text-foreground" },
+  { id: 6, text: "Payment reminder sent to Deepak Gupta — ₹6.5L due Apr 5", agent: "Nisha P", time: "2 days ago", icon: DollarSign, iconBg: "bg-muted", iconColor: "text-foreground" },
+  { id: 7, text: "Site visit scheduled — Horizon Residency with Pooja Nair", agent: "Arjun K", time: "2 days ago", icon: Calendar, iconBg: "bg-muted", iconColor: "text-foreground" },
+  { id: 8, text: "Follow-up call — Amit Verma, interested in studio apartment", agent: "Nisha P", time: "3 days ago", icon: Phone, iconBg: "bg-muted", iconColor: "text-foreground" },
 ];
 
 export default function ActivitiesPage() {
@@ -30,13 +30,13 @@ export default function ActivitiesPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "This Week", value: "108" },
-          { label: "Calls Made", value: "34", className: "text-blue-400" },
-          { label: "Visits Done", value: "18", className: "text-green-400" },
-          { label: "Deals Closed", value: "3", className: "text-amber-400" },
+          { label: "Calls Made", value: "34" },
+          { label: "Visits Done", value: "18" },
+          { label: "Deals Closed", value: "3" },
         ].map((s) => (
           <div key={s.label} className="bg-card border border-border rounded-xl p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
-            <p className={`text-2xl font-medium tracking-tight ${s.className || "text-foreground"}`}>{s.value}</p>
+            <p className="text-2xl font-medium tracking-tight text-foreground">{s.value}</p>
           </div>
         ))}
       </div>
@@ -45,11 +45,11 @@ export default function ActivitiesPage() {
           <h3 className="text-sm font-medium text-foreground mb-4">Activity This Week</h3>
           <ResponsiveContainer width="100%" height={140}>
             <LineChart data={activityData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#222" />
-              <XAxis dataKey="day" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: "#1a1a1a", border: "1px solid #333", borderRadius: 8, fontSize: 12 }} />
-              <Line type="monotone" dataKey="activities" stroke="#e8e8e8" strokeWidth={2} dot={{ fill: "#e8e8e8", r: 3 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="day" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--foreground))" }} />
+              <Line type="monotone" dataKey="activities" stroke="hsl(var(--foreground))" strokeWidth={2} dot={{ fill: "hsl(var(--foreground))", r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -57,11 +57,11 @@ export default function ActivitiesPage() {
           <h3 className="text-sm font-medium text-foreground mb-4">Activity by Type</h3>
           <ResponsiveContainer width="100%" height={140}>
             <BarChart data={actTypeData} layout="vertical" barSize={14}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#222" />
-              <XAxis type="number" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis dataKey="type" type="category" tick={{ fill: "#888", fontSize: 11 }} axisLine={false} tickLine={false} width={60} />
-              <Tooltip contentStyle={{ background: "#1a1a1a", border: "1px solid #333", borderRadius: 8, fontSize: 12 }} />
-              <Bar dataKey="count" fill="rgba(245,245,245,0.2)" radius={[0, 3, 3, 0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis dataKey="type" type="category" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} width={60} />
+              <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--foreground))" }} />
+              <Bar dataKey="count" fill="hsl(var(--foreground))" fillOpacity={0.2} radius={[0, 3, 3, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

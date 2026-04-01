@@ -20,10 +20,10 @@ const revenueData = [
 ];
 
 const dealTypeData = [
-  { name: "Residential", value: 45, color: "#f5f5f5" },
-  { name: "Commercial", value: 20, color: "#555" },
-  { name: "Villa", value: 25, color: "#888" },
-  { name: "Plot", value: 10, color: "#333" },
+  { name: "Residential", value: 45, color: "hsl(0 0% 0%)" },
+  { name: "Commercial", value: 20, color: "hsl(0 0% 30%)" },
+  { name: "Villa", value: 25, color: "hsl(0 0% 50%)" },
+  { name: "Plot", value: 10, color: "hsl(0 0% 80%)" },
 ];
 
 const leads = [
@@ -57,8 +57,8 @@ const stageColors: Record<string, string> = {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload?.length) {
     return (
-      <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-xs">
-        <p className="text-zinc-400 mb-1">{label}</p>
+      <div className="bg-background border border-border rounded-lg p-3 text-xs">
+        <p className="text-muted-foreground mb-1">{label}</p>
         {payload.map((p: any, i: number) => (
           <p key={i} style={{ color: p.color }} className="font-medium">
             {p.name}: ₹{p.value}L
@@ -113,16 +113,16 @@ export default function DashboardPage() {
             <AreaChart data={revenueData}>
               <defs>
                 <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f5f5f5" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#f5f5f5" stopOpacity={0} />
+                  <stop offset="5%" stopColor="hsl(var(--foreground))" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="hsl(var(--foreground))" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#222" />
-              <XAxis dataKey="month" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="target" stroke="#444" strokeWidth={1.5} fill="none" strokeDasharray="4 4" name="Target" />
-              <Area type="monotone" dataKey="revenue" stroke="#e8e8e8" strokeWidth={2} fill="url(#revGrad)" name="Revenue" />
+              <Area type="monotone" dataKey="target" stroke="hsl(var(--foreground))" strokeWidth={1.5} fill="none" strokeDasharray="4 4" name="Target" />
+              <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#revGrad)" name="Revenue" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -139,7 +139,7 @@ export default function DashboardPage() {
                   <Cell key={i} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v: any) => [`${v}%`, ""]} contentStyle={{ background: "#1a1a1a", border: "1px solid #333", borderRadius: 8, fontSize: 12 }} />
+              <Tooltip formatter={(v: any) => [`${v}%`, ""]} contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--foreground))" }} />
             </PieChart>
           </ResponsiveContainer>
           <div className="space-y-1.5 mt-2">

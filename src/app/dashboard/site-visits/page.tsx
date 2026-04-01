@@ -32,13 +32,13 @@ export default function SiteVisitsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "This Month", value: "24" },
-          { label: "Confirmed", value: "16", className: "text-green-400" },
-          { label: "Pending", value: "8", className: "text-amber-400" },
+          { label: "Confirmed", value: "16" },
+          { label: "Pending", value: "8" },
           { label: "Completed", value: "41" },
         ].map((s) => (
           <div key={s.label} className="bg-card border border-border rounded-xl p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
-            <p className={`text-2xl font-medium tracking-tight ${s.className || "text-foreground"}`}>{s.value}</p>
+            <p className="text-2xl font-medium tracking-tight text-foreground">{s.value}</p>
           </div>
         ))}
       </div>
@@ -74,13 +74,13 @@ export default function SiteVisitsPage() {
                   onClick={() => setSelectedDay(d)}
                   className={`relative aspect-square flex items-center justify-center text-xs rounded-lg transition-all ${
                     isToday && !isSelected ? "bg-foreground text-background font-semibold"
-                    : isSelected ? "bg-zinc-700 text-foreground font-medium ring-1 ring-zinc-500"
+                    : isSelected ? "bg-muted text-foreground font-medium ring-1 ring-border"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   {d}
                   {hasVisit && !isToday && (
-                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-amber-400 rounded-full" />
+                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-muted border border-foreground rounded-full" />
                   )}
                 </button>
               );
@@ -88,7 +88,7 @@ export default function SiteVisitsPage() {
           </div>
           <div className="mt-4 pt-4 border-t border-border">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+              <span className="w-2 h-2 rounded-full bg-muted border border-foreground inline-block" />
               Visits scheduled
               <span className="ml-auto">{visits.length} total this month</span>
             </div>
@@ -124,7 +124,7 @@ export default function SiteVisitsPage() {
                         <MapPin className="w-3 h-3" /> {v.location}
                       </p>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${v.status === "confirmed" ? "text-green-400 bg-green-950/50" : "text-amber-400 bg-amber-950/50"}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${v.status === "confirmed" ? "text-foreground bg-muted" : "text-muted-foreground bg-muted"}`}>
                       {v.status}
                     </span>
                   </div>
@@ -144,19 +144,19 @@ export default function SiteVisitsPage() {
       {/* Schedule Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowModal(false)}>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-background border border-border rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-medium">Schedule Site Visit</h2>
+              <h2 className="text-base font-medium text-foreground">Schedule Site Visit</h2>
               <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground text-xl">×</button>
             </div>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Client</label>
-                <input placeholder="Search or enter client name" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500" />
+                <input placeholder="Search or enter client name" className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground" />
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Property</label>
-                <select className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none">
+                <select className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none">
                   <option>Prestige Skyline</option>
                   <option>Green Valley Villa</option>
                   <option>Horizon Residency</option>
@@ -167,24 +167,24 @@ export default function SiteVisitsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Date</label>
-                  <input type="date" defaultValue="2026-03-29" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-zinc-500" />
+                  <input type="date" defaultValue="2026-03-29" className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-foreground" />
                 </div>
                 <div>
                   <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Time</label>
-                  <select className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none">
+                  <select className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none">
                     {["9:00 AM","10:00 AM","11:00 AM","12:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM"].map((t) => <option key={t}>{t}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Assigned Agent</label>
-                <select className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none">
+                <select className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none">
                   {["Arjun Kapoor","Nisha Patel","Vikram Singh","Meera Rao","Karan Desai"].map((a) => <option key={a}>{a}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Notes</label>
-                <textarea rows={3} placeholder="Any special instructions..." className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 resize-none" />
+                <textarea rows={3} placeholder="Any special instructions..." className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground resize-none" />
               </div>
             </div>
             <button onClick={() => setShowModal(false)} className="w-full mt-5 bg-foreground text-background py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
