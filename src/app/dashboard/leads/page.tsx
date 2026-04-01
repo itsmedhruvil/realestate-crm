@@ -171,13 +171,13 @@ export default function LeadsPage() {
       {/* Lead Detail Modal */}
       {selected && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSelected(null)}>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-base font-medium text-foreground">Lead Details</h2>
               <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground text-xl">×</button>
             </div>
             <div className="flex items-center gap-4 mb-5">
-              <div className="w-14 h-14 rounded-full bg-zinc-800 flex items-center justify-center text-lg font-semibold text-foreground">
+              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-lg font-semibold text-foreground">
                 {selected.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
               </div>
               <div>
@@ -188,8 +188,8 @@ export default function LeadsPage() {
             </div>
             <div className="grid grid-cols-2 gap-3 mb-4">
               {[["Budget", selected.budget], ["Interest", selected.interest], ["Agent", selected.agent], ["Source", selected.source]].map(([k, v]) => (
-                <div key={k} className="bg-zinc-800 rounded-lg p-3">
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{k}</p>
+                <div key={k} className="bg-muted rounded-lg p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{k}</p>
                   <p className="text-sm font-medium text-foreground">{v}</p>
                 </div>
               ))}
@@ -199,18 +199,18 @@ export default function LeadsPage() {
                 <span className="text-muted-foreground">Lead Score</span>
                 <span className="font-medium text-foreground">{selected.score}/100</span>
               </div>
-              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all" style={{ width: `${selected.score}%`, background: selected.score >= 80 ? "#4ade80" : selected.score >= 60 ? "#fbbf24" : "#f87171" }} />
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all" style={{ width: `${selected.score}%`, background: "hsl(var(--foreground))" }} />
               </div>
             </div>
             <div className="flex gap-2">
               <button className="flex-1 flex items-center justify-center gap-2 bg-foreground text-background py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
                 <Phone className="w-3.5 h-3.5" /> Call
               </button>
-              <button className="flex-1 flex items-center justify-center gap-2 bg-zinc-800 text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors">
+              <button className="flex-1 flex items-center justify-center gap-2 bg-muted text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors">
                 <Mail className="w-3.5 h-3.5" /> Email
               </button>
-              <button className="flex-1 flex items-center justify-center gap-2 bg-zinc-800 text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors">
+              <button className="flex-1 flex items-center justify-center gap-2 bg-muted text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors">
                 <Plus className="w-3.5 h-3.5" /> Visit
               </button>
             </div>
