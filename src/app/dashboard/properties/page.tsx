@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2, Bed, Maximize2, MapPin, Plus, Search, Eye, Edit2, Upload, X } from "lucide-react";
+import { Building2, Bed, Maximize2, MapPin, Plus, Search, Eye, Edit2, Upload, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { CldUploadButton } from 'next-cloudinary';
 import { toast } from "sonner";
-import { useProperties } from "@/lib/hooks/useData";
-import { useTeam, useLeads } from "@/lib/hooks/useData";
+import { useProperties, useTeam, useLeads, useClients } from "@/lib/hooks/useData";
 
 interface Property {
   id: string;
@@ -70,6 +69,12 @@ export default function PropertiesPage() {
   const { data: properties = [], isLoading: loading, mutate } = useProperties<Property[]>();
   const { data: team = [] } = useTeam<any[]>();
   const { data: leads = [] } = useLeads<any[]>();
+  const { data: clients = [] } = useClients<any[]>();
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [viewProperty]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({
@@ -361,15 +366,19 @@ export default function PropertiesPage() {
                 </div>
                 <div>
                   <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Client</label>
-                  <select
+                  <input
+                    list="client-list"
                     name="client"
                     value={formData.client}
                     onChange={handleInputChange}
-                    className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none"
-                  >
-                    <option value="">Select Client</option>
-                    {leads.map((l: any) => <option key={l.id} value={l.name}>{l.name}</option>)}
-                  </select>
+                    placeholder="Search or select existing client"
+                    className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-foreground"
+                  />
+                  <datalist id="client-list">
+                    {clients.map((client: any) => (
+                      <option key={client.id} value={client.name} />
+                    ))}
+                  </datalist>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -455,7 +464,31 @@ export default function PropertiesPage() {
           <div className="bg-background border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
             <div className="relative">
               {viewProperty.images && viewProperty.images.length > 0 ? (
-                <img src={viewProperty.images[0]} alt={viewProperty.name} className="w-full h-56 object-cover rounded-t-2xl" />
+                <div className="relative">
+                  <img
+                    src={viewProperty.images[activeImageIndex]}
+                    alt={viewProperty.name}
+                    className="w-full h-56 object-cover rounded-t-2xl"
+                  />
+                  {viewProperty.images.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setActiveImageIndex((prev) => (prev - 1 + (viewProperty.images?.length ?? 1)) % (viewProperty.images?.length ?? 1))}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white hover:bg-black/60"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveImageIndex((prev) => (prev + 1) % (viewProperty.images?.length ?? 1))}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white hover:bg-black/60"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
               ) : (
                 <div className="w-full h-56 flex flex-col items-center justify-center bg-muted rounded-t-2xl">
                   <Building2 className="w-16 h-16 text-foreground/20" />
@@ -483,12 +516,14 @@ export default function PropertiesPage() {
               {viewProperty.images && viewProperty.images.length > 0 && (
                 <div className="flex gap-2 overflow-x-auto pb-2">
                   {viewProperty.images.map((img, i) => (
-                    <img 
-                      key={i} 
-                      src={img} 
-                      alt="" 
-                      className="w-20 h-20 rounded-lg object-cover flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity border-2 border-transparent"
-                    />
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setActiveImageIndex(i)}
+                      className={`w-20 h-20 rounded-lg overflow-hidden border ${activeImageIndex === i ? 'border-foreground' : 'border-transparent'} shrink-0`}
+                    >
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </button>
                   ))}
                 </div>
               )}

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, FormEvent } from "react";
 import { Plus, ChevronLeft, ChevronRight, MapPin, Clock, User } from "lucide-react";
 import { toast } from "sonner";
-import { useVisits } from "@/lib/hooks/useData";
+import { useVisits, useClients } from "@/lib/hooks/useData";
 
 interface SiteVisit {
   id: string;
@@ -32,6 +32,7 @@ export default function SiteVisitsPage() {
   });
 
   const { data: visits = [], isLoading: loading, mutate } = useVisits<SiteVisit[]>();
+  const { data: clients = [] } = useClients<any[]>();
 
   useEffect(() => {
     if (visits.length > 0 && visits[0].date) {
@@ -195,12 +196,18 @@ export default function SiteVisitsPage() {
               <div>
                 <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Client</label>
                 <input
+                  list="visit-client-list"
                   required
                   value={formData.client}
                   onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-                  placeholder="Search or enter client name"
+                  placeholder="Search or select existing client"
                   className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-foreground"
                 />
+                <datalist id="visit-client-list">
+                  {clients.map((client: any) => (
+                    <option key={client.id} value={client.name} />
+                  ))}
+                </datalist>
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Property</label>

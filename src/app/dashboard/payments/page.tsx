@@ -4,7 +4,7 @@ import { useMemo, useState, type ElementType, FormEvent } from "react";
 import { AlertCircle, Clock, CheckCircle2, Bell, Plus, Download, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { toast } from "sonner";
-import { usePayments } from "@/lib/hooks/useData";
+import { usePayments, useClients } from "@/lib/hooks/useData";
 
 interface Payment {
   id: string;
@@ -38,6 +38,7 @@ export default function PaymentsPage() {
   });
 
   const { data: payments = [], isLoading: loading, mutate } = usePayments<Payment[]>();
+  const { data: clients = [] } = useClients<any[]>();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -242,12 +243,18 @@ export default function PaymentsPage() {
               <div>
                 <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Client</label>
                 <input
+                  list="payment-client-list"
                   required
                   value={formData.client}
                   onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-                  placeholder="Client name"
+                  placeholder="Search or select existing client"
                   className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-foreground"
                 />
+                <datalist id="payment-client-list">
+                  {clients.map((client: any) => (
+                    <option key={client.id} value={client.name} />
+                  ))}
+                </datalist>
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Property</label>

@@ -32,6 +32,10 @@ export function useProperties<T = any>() {
   return useData<T>('/api/properties');
 }
 
+export function useClients<T = any>() {
+  return useData<T>('/api/clients');
+}
+
 export function useTeam<T = any>() {
   return useData<T>('/api/team');
 }
