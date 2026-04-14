@@ -32,6 +32,20 @@ export default function TeamPage() {
 
   const { data: team = [], isLoading: loading, mutate } = useTeam<TeamMember[]>();
 
+  const handleDeleteTeamMember = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this team member?')) return;
+
+    try {
+      const res = await fetch(`/api/team?id=${id}`, { method: 'DELETE' });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result?.error || 'Failed to delete team member');
+      toast.success('Team member deleted');
+      mutate();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete team member');
+    }
+  };
+
   const stats = useMemo(() => {
     const totalAgents = team.length;
     const leadsHandled = team.reduce((sum, m) => sum + (m.leads || 0), 0);
@@ -149,12 +163,19 @@ export default function TeamPage() {
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <button className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground py-2 rounded-lg transition-colors">
                   <Phone className="w-3 h-3" /> Call
                 </button>
                 <button className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground py-2 rounded-lg transition-colors">
                   <Mail className="w-3 h-3" /> Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteTeamMember(member.id)}
+                  className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-red-600 hover:bg-red-700 text-background py-2 rounded-lg transition-colors"
+                >
+                  Delete
                 </button>
               </div>
             </div>

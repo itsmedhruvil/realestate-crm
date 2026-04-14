@@ -64,3 +64,20 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Failed to update activity" }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: "Activity ID required" }, { status: 400 });
+    }
+
+    await prisma.activity.delete({ where: { id } });
+    return NextResponse.json({ message: "Activity deleted successfully" });
+  } catch (error) {
+    console.error('Error deleting activity:', error);
+    return NextResponse.json({ error: "Failed to delete activity" }, { status: 500 });
+  }
+}

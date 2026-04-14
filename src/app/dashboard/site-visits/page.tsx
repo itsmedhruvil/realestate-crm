@@ -63,6 +63,20 @@ export default function SiteVisitsPage() {
     }
   };
 
+  const handleDeleteVisit = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this site visit?")) return;
+
+    try {
+      const res = await fetch(`/api/visits?id=${id}`, { method: "DELETE" });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed to delete site visit");
+      toast.success("Site visit deleted");
+      mutate();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete site visit");
+    }
+  };
+
   const visitDays = useMemo(() => new Set(visits.map((visit) => visit.date ? new Date(visit.date).getDate() : null).filter((day): day is number => day !== null)), [visits]);
   const dayVisits = useMemo(() => visits.filter((visit) => visit.date ? new Date(visit.date).getDate() === selectedDay : false), [visits, selectedDay]);
 
@@ -178,6 +192,18 @@ export default function SiteVisitsPage() {
                     <span className="flex items-center gap-1"><User className="w-3 h-3" /> Agent: {visit.agent || "-"}</span>
                   </div>
                   {visit.notes && <p className="text-xs text-muted-foreground mt-2 italic">{visit.notes}</p>}
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteVisit(visit.id);
+                      }}
+                      className="text-sm text-red-600 hover:text-red-800 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))
             )}

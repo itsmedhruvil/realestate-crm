@@ -92,7 +92,22 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE operation for properties is not explicitly defined in the original API routes,
-// but it's good practice to include it for completeness if needed.
-// For now, I'll omit it to stick to the provided API routes structure.
-// If you need DELETE for properties, let me know.
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: "Property ID required" }, { status: 400 });
+    }
+
+    await prisma.property.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ message: "Property deleted successfully" });
+  } catch (error) {
+    console.error('Error deleting property:', error);
+    return NextResponse.json({ error: "Failed to delete property" }, { status: 500 });
+  }
+}

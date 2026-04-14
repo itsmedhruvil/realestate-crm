@@ -54,7 +54,21 @@ function formatRelativeTime(dateString: string) {
 }
 
 export default function ActivitiesPage() {
-  const { data: activities = [], isLoading: loading } = useActivities<Activity[]>();
+  const { data: activities = [], isLoading: loading, mutate } = useActivities<Activity[]>();
+
+  const handleDeleteActivity = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this activity?')) return;
+
+    try {
+      const res = await fetch(`/api/activities?id=${id}`, { method: 'DELETE' });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result?.error || 'Failed to delete activity');
+      toast.success('Activity deleted');
+      mutate();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete activity');
+    }
+  };
 
   const activityCountsByType = useMemo(() => {
     return activities.reduce<Record<string, number>>((acc, activity) => {
@@ -176,7 +190,16 @@ export default function ActivitiesPage() {
                   <p className="text-sm text-foreground">{activity.text || typeLabelMap[typeKey] || "Activity"}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{activity.agent || "Unknown agent"}</p>
                 </div>
-                <p className="text-xs text-muted-foreground shrink-0">{formatRelativeTime(activity.createdAt)}</p>
+                <div className="flex flex-col items-end gap-2">
+                  <p className="text-xs text-muted-foreground">{formatRelativeTime(activity.createdAt)}</p>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteActivity(activity.id); }}
+                    className="text-xs text-red-600 hover:text-red-800"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             );
           })}

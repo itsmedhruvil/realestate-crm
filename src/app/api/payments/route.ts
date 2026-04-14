@@ -69,7 +69,19 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE operation for payments is not explicitly defined in the original API routes,
-// but it's good practice to include it for completeness if needed.
-// For now, I'll omit it to stick to the provided API routes structure.
-// If you need DELETE for payments, let me know.
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: "Payment ID required" }, { status: 400 });
+    }
+
+    await prisma.payment.delete({ where: { id } });
+    return NextResponse.json({ message: "Payment deleted successfully" });
+  } catch (error) {
+    console.error('Error deleting payment:', error);
+    return NextResponse.json({ error: "Failed to delete payment" }, { status: 500 });
+  }
+}

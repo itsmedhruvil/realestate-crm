@@ -26,9 +26,11 @@ const statusConfig: Record<string, { icon: ElementType; label: string; badge: st
 export default function PaymentsPage() {
   const [filter, setFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
+    id: "",
     client: "",
     property: "",
     amount: 0,
@@ -43,20 +45,60 @@ export default function PaymentsPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+
+    const payload = {
+      id: formData.id,
+      client: formData.client,
+      property: formData.property,
+      amount: formData.amount,
+      dueDate: formData.dueDate,
+      type: formData.type,
+      status: formData.status,
+    };
+
     try {
       const res = await fetch("/api/payments", {
-        method: "POST",
+        method: editMode && formData.id ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed to add payment reminder");
-      toast.success("Payment reminder added!");
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.error || "Failed to save payment reminder");
+      }
+
+      toast.success(editMode ? "Payment updated!" : "Payment reminder added!");
       setShowAddModal(false);
+      setEditMode(false);
+      setFormData({
+        id: "",
+        client: "",
+        property: "",
+        amount: 0,
+        dueDate: new Date().toISOString().split('T')[0],
+        type: "Down Payment",
+        status: "pending"
+      });
       mutate();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || "Failed to save payment reminder");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeletePayment = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this payment reminder?")) return;
+
+    try {
+      const res = await fetch(`/api/payments?id=${id}`, { method: "DELETE" });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result?.error || "Failed to delete payment reminder");
+      toast.success("Payment reminder deleted");
+      mutate();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete payment reminder");
     }
   };
 
@@ -221,8 +263,43 @@ export default function PaymentsPage() {
                   </p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.badge} shrink-0`}>{cfg.label}</span>
-                <button className="shrink-0 p-2 bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors" title="Send reminder">
+                <button
+                  className="shrink-0 p-2 bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                  title="Send reminder"
+                >
                   <Bell className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditMode(true);
+                    setFormData({
+                      id: payment.id,
+                      client: payment.client || "",
+                      property: payment.property || "",
+                      amount: payment.amount ?? 0,
+                      dueDate: payment.dueDate ? payment.dueDate.split('T')[0] : new Date().toISOString().split('T')[0],
+                      type: payment.type || "Down Payment",
+                      status: payment.status,
+                    });
+                    setShowAddModal(true);
+                  }}
+                  className="shrink-0 p-2 bg-card border border-border rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                  title="Edit payment"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeletePayment(payment.id);
+                  }}
+                  className="shrink-0 p-2 bg-card border border-border rounded-lg text-red-600 hover:text-red-800 transition-colors"
+                  title="Delete payment"
+                >
+                  Delete
                 </button>
               </div>
             );
@@ -231,11 +308,19 @@ export default function PaymentsPage() {
       </div>
 
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => { setShowAddModal(false); setEditMode(false); }}>
           <div className="bg-background border border-border rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-medium text-foreground">Add Payment Reminder</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-muted-foreground hover:text-foreground">
+              <h2 className="text-base font-medium text-foreground">
+                {editMode ? "Edit Payment Reminder" : "Add Payment Reminder"}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setEditMode(false);
+                }}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -287,8 +372,32 @@ export default function PaymentsPage() {
                   />
                 </div>
               </div>
-              <button type="submit" disabled={submitting} className="w-full mt-5 bg-foreground text-background py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
-                {submitting ? "Adding..." : "Add Reminder"}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Type</label>
+                  <input
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    placeholder="Payment type"
+                    className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-foreground"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Status</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-foreground"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="completed">Completed</option>
+                    <option value="overdue">Overdue</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" disabled={submitting} className="w-full mt-5 bg-foreground text-background py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+                {submitting ? (editMode ? "Saving..." : "Adding...") : editMode ? "Save Changes" : "Add Reminder"}
               </button>
             </form>
           </div>

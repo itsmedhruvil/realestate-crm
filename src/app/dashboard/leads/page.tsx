@@ -86,6 +86,22 @@ export default function LeadsPage() {
     }
   };
 
+  const handleDeleteLead = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this lead?')) return;
+
+    try {
+      const res = await fetch(`/api/leads?id=${id}`, { method: 'DELETE' });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result?.error || 'Failed to delete lead');
+      toast.success('Lead deleted successfully!');
+      setSelected(null);
+      mutate();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete lead');
+      console.error(error);
+    }
+  };
+
 
   const leadsByStageData = stageOrder.slice(0, 5).map((s) => ({
     stage: s,
@@ -416,6 +432,20 @@ export default function LeadsPage() {
               </button>
               <button className="flex-1 flex items-center justify-center gap-2 bg-muted text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors">
                 <Plus className="w-3.5 h-3.5" /> Visit
+              </button>
+            </div>
+            <div className="mt-4 flex justify-between gap-2">
+              <button
+                onClick={() => handleDeleteLead(selected.id)}
+                className="flex-1 bg-red-600 text-background py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                Delete Lead
+              </button>
+              <button
+                onClick={() => setSelected(null)}
+                className="flex-1 bg-muted text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>

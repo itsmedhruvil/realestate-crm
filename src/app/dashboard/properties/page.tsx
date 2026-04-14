@@ -175,6 +175,22 @@ export default function PropertiesPage() {
     setViewProperty(property);
   };
 
+  const handleDeleteProperty = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this property?")) return;
+
+    try {
+      const res = await fetch(`/api/properties?id=${id}`, { method: "DELETE" });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result?.error || "Failed to delete property");
+      toast.success("Property deleted successfully");
+      setViewProperty(null);
+      mutate();
+    } catch (error: any) {
+      console.error("Error deleting property:", error);
+      toast.error(error.message || "Failed to delete property");
+    }
+  };
+
   const filtered = useMemo(
     () =>
       properties.filter((p) => {
@@ -549,6 +565,12 @@ export default function PropertiesPage() {
                   className="flex-1 bg-foreground text-background py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
                 >
                   Edit Property
+                </button>
+                <button 
+                  onClick={() => handleDeleteProperty(viewProperty.id)}
+                  className="flex-1 bg-red-600 text-background py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  Delete Property
                 </button>
                 <button 
                   onClick={() => setViewProperty(null)}

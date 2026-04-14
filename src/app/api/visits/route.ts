@@ -81,3 +81,20 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Failed to update site visit" }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: "Visit ID required" }, { status: 400 });
+    }
+
+    await prisma.siteVisit.delete({ where: { id } });
+    return NextResponse.json({ message: "Site visit deleted successfully" });
+  } catch (error) {
+    console.error('Error deleting site visit:', error);
+    return NextResponse.json({ error: "Failed to delete site visit" }, { status: 500 });
+  }
+}
