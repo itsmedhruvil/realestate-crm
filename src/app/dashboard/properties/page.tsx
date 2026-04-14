@@ -134,6 +134,8 @@ export default function PropertiesPage() {
         beds: "",
         baths: "",
         sqft: "",
+        agent: "",
+        client: "",
         status: "available",
         images: []
       });
