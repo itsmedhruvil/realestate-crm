@@ -1,19 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Phone, Mail, Filter } from "lucide-react";
+import { FormEvent, useState, useEffect } from "react";
+import { Plus, Phone, Mail, Filter, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-
-const leads = [
-  { id: 1, name: "Priya Sharma", email: "priya@email.com", phone: "+91 98765 43210", budget: "₹1.2Cr", interest: "3 BHK Residential", stage: "Hot", score: 92, agent: "Arjun K", date: "Mar 28", source: "Website" },
-  { id: 2, name: "Rahul Mehta", email: "rahul@biz.in", phone: "+91 87654 32109", budget: "₹85L", interest: "2 BHK Apartment", stage: "Warm", score: 74, agent: "Nisha P", date: "Mar 27", source: "Referral" },
-  { id: 3, name: "Sunita Patel", email: "sunita@corp.com", phone: "+91 76543 21098", budget: "₹2.5Cr", interest: "Commercial Space", stage: "Cold", score: 41, agent: "Vikram S", date: "Mar 26", source: "JustDial" },
-  { id: 4, name: "Deepak Gupta", email: "deepak@mail.com", phone: "+91 65432 10987", budget: "₹65L", interest: "1 BHK Flat", stage: "Warm", score: 68, agent: "Arjun K", date: "Mar 25", source: "99acres" },
-  { id: 5, name: "Kavita Joshi", email: "kavita@co.in", phone: "+91 54321 09876", budget: "₹3.1Cr", interest: "Luxury Villa", stage: "Hot", score: 88, agent: "Meera R", date: "Mar 24", source: "Referral" },
-  { id: 6, name: "Amit Verma", email: "amit@startup.io", phone: "+91 43210 98765", budget: "₹45L", interest: "Studio Apartment", stage: "New", score: 55, agent: "Nisha P", date: "Mar 23", source: "Walk-in" },
-  { id: 7, name: "Pooja Nair", email: "pooja@tech.com", phone: "+91 32109 87654", budget: "₹1.8Cr", interest: "4 BHK Row House", stage: "Negotiating", score: 81, agent: "Vikram S", date: "Mar 22", source: "MagicBricks" },
-  { id: 8, name: "Ravi Malhotra", email: "ravi@firms.in", phone: "+91 21098 76543", budget: "₹95L", interest: "2.5 BHK", stage: "Warm", score: 71, agent: "Arjun K", date: "Mar 21", source: "Website" },
-];
+import { toast } from "sonner";
 
 const stageOrder = ["New", "Cold", "Warm", "Hot", "Negotiating", "Closed"];
 const stageColors: Record<string, string> = {
@@ -26,16 +16,99 @@ const stageColors: Record<string, string> = {
 };
 
 const scoreColor = (n: number) =>
-  n >= 80 ? { bg: "hsl(var(--grey-800))", color: "hsl(var(--foreground))" } : n >= 60 ? { bg: "hsl(var(--grey-700))", color: "hsl(var(--foreground))" } : { bg: "hsl(var(--grey-600))", color: "hsl(var(--foreground))" };
+  n >= 80 ? { bg: "hsl(var(--grey-800))", color: "#ffffff" } : n >= 60 ? { bg: "hsl(var(--grey-700))", color: "#ffffff" } : { bg: "hsl(var(--grey-600))", color: "#ffffff" };
 
-const leadsByStageData = stageOrder.slice(0, 5).map((s) => ({
-  stage: s,
-  count: leads.filter((l) => l.stage === s).length,
-}));
+interface Lead {
+  id: string;
+  createdAt: string;
+  name: string;
+  email: string;
+  phone?: string;
+  budget?: string;
+  interest?: string;
+  stage: string;
+  score: number;
+  agent?: string;
+  source?: string;
+  notes?: string;
+}
 
 export default function LeadsPage() {
   const [view, setView] = useState<"list" | "kanban">("list");
-  const [selected, setSelected] = useState<typeof leads[0] | null>(null);
+  const [selected, setSelected] = useState<Lead | null>(null);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    budget: "",
+    interest: "",
+    stage: "New",
+    score: 50,
+    agent: "",
+    source: "",
+    notes: ""
+  });
+
+  const fetchLeads = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/leads');
+      const data = await res.json();
+      if (data.data) {
+        setLeads(data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch leads:', error);
+      toast.error('Failed to load leads');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result?.error || 'Failed to create lead');
+
+      toast.success('Lead added successfully!');
+      setShowAddModal(false);
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        budget: "",
+        interest: "",
+        stage: "New",
+        score: 50,
+        agent: "",
+        source: "",
+        notes: "",
+      });
+      fetchLeads();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add lead');
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeads();
+  }, []);
+
+  const leadsByStageData = stageOrder.slice(0, 5).map((s) => ({
+    stage: s,
+    count: leads.filter((l) => l.stage === s).length,
+  }));
 
   return (
     <div className="p-4 lg:p-6 space-y-5">
@@ -45,7 +118,10 @@ export default function LeadsPage() {
           {[
             { label: "Total Leads", value: leads.length.toString() },
             { label: "Hot Leads", value: leads.filter((l) => l.stage === "Hot").length.toString() },
-            { label: "Avg Score", value: Math.round(leads.reduce((a, l) => a + l.score, 0) / leads.length).toString() },
+            {
+              label: "Avg Score",
+              value: leads.length ? Math.round(leads.reduce((a, l) => a + l.score, 0) / leads.length).toString() : "0",
+            },
           ].map((s) => (
             <div key={s.label} className="bg-card border border-border rounded-xl p-4">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
@@ -77,10 +153,156 @@ export default function LeadsPage() {
         <button className="flex items-center gap-2 text-xs text-muted-foreground bg-card border border-border px-3 py-2 rounded-lg hover:text-foreground transition-colors">
           <Filter className="w-3 h-3" /> Filter
         </button>
-        <button className="flex items-center gap-2 bg-foreground text-background px-4 py-2 rounded-lg text-xs font-medium hover:opacity-90 transition-opacity ml-auto">
+        <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 bg-foreground text-background px-4 py-2 rounded-lg text-xs font-medium hover:opacity-90 transition-opacity ml-auto">
           <Plus className="w-3.5 h-3.5" /> Add Lead
         </button>
       </div>
+
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
+          <div className="bg-background border border-border rounded-3xl w-full max-w-3xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4 mb-6">
+              <div>
+                <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground mb-2">New Lead</p>
+                <h2 className="text-2xl font-semibold text-foreground">Create a qualified lead profile</h2>
+                <p className="mt-2 text-sm text-muted-foreground max-w-xl">
+                  Capture the client details, source, budget, and status in one place. This form is built for sales ops and keeps the lead record complete.
+                </p>
+              </div>
+              <button onClick={() => setShowAddModal(false)} className="text-muted-foreground hover:text-foreground text-2xl leading-none">×</button>
+            </div>
+
+            <form onSubmit={(e: FormEvent<HTMLFormElement>) => handleSubmit(e)} className="grid gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <label className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</span>
+                  <input
+                    value={formData.name}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                    required
+                    placeholder="Client name"
+                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-foreground"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</span>
+                  <input
+                    value={formData.email}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                    required
+                    type="email"
+                    placeholder="client@example.com"
+                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-foreground"
+                  />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <label className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Phone</span>
+                  <input
+                    value={formData.phone}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                    type="tel"
+                    placeholder="+91 98765 43210"
+                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-foreground"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Budget</span>
+                  <input
+                    value={formData.budget}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, budget: e.target.value }))}
+                    placeholder="₹45,00,000"
+                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-foreground"
+                  />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <label className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Interest</span>
+                  <input
+                    value={formData.interest}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, interest: e.target.value }))}
+                    placeholder="Residential / Commercial"
+                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-foreground"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Stage</span>
+                  <select
+                    value={formData.stage}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, stage: e.target.value }))}
+                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-foreground"
+                  >
+                    {stageOrder.map((stage) => (
+                      <option key={stage} value={stage}>{stage}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Lead Score</span>
+                  <input
+                    value={formData.score}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, score: Number(e.target.value) }))}
+                    type="range"
+                    min={0}
+                    max={100}
+                    className="w-full"
+                  />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>0</span>
+                    <span>{formData.score}</span>
+                    <span>100</span>
+                  </div>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <label className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Agent</span>
+                  <input
+                    value={formData.agent}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, agent: e.target.value }))}
+                    placeholder="Assigned agent"
+                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-foreground"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Source</span>
+                  <input
+                    value={formData.source}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, source: e.target.value }))}
+                    placeholder="Referral, Website, Walk-in"
+                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-foreground"
+                  />
+                </label>
+              </div>
+
+              <label className="space-y-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</span>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Any context for the client, follow-up reminders, or campaign details."
+                  rows={4}
+                  className="w-full rounded-2xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-foreground resize-none"
+                />
+              </label>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button type="button" onClick={() => setShowAddModal(false)} className="w-full sm:w-auto px-4 py-3 rounded-xl border border-border text-sm font-medium text-foreground bg-background hover:bg-muted transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" className="w-full sm:w-auto px-4 py-3 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity">
+                  Add Lead
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* List View */}
       {view === "list" && (
@@ -116,13 +338,13 @@ export default function LeadsPage() {
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${stageColors[lead.stage]}`}>{lead.stage}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: sc.bg, color: sc.color }}>
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white" style={{ background: sc.bg }}>
                           {lead.score}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{lead.agent}</td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{lead.source}</td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{lead.date}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(lead.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
                     </tr>
                   );
                 })}
@@ -150,7 +372,7 @@ export default function LeadsPage() {
                       <div key={l.id} className="bg-muted/40 border border-border rounded-lg p-3 cursor-pointer hover:bg-muted/60 transition-colors" onClick={() => setSelected(l)}>
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-sm font-medium text-foreground">{l.name}</p>
-                          <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: sc.bg, color: sc.color }}>{l.score}</div>
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold text-white" style={{ background: sc.bg }}>{l.score}</div>
                         </div>
                         <p className="text-xs text-muted-foreground mb-2">{l.interest}</p>
                         <div className="flex items-center justify-between">

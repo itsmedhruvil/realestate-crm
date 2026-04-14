@@ -1,27 +1,16 @@
+import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/mariadb";
-import { ResultSetHeader } from "mysql2/promise";
+import { supabase } from "@/lib/supabase";
 
 export async function GET() {
   try {
-    const leads = await query(`
-      SELECT 
-        id,
-        name,
-        email,
-        phone,
-        budget,
-        interest,
-        stage,
-        score,
-        agent,
-        source,
-        notes,
-        created_at as date
-      FROM leads 
-      ORDER BY created_at DESC
-    `);
-    
+    const { data: leads, error } = await supabase
+      .from('Lead')
+      .select('*')
+      .order('createdAt', { ascending: false });
+
+    if (error) throw error;
+
     return NextResponse.json({ data: leads });
   } catch (error) {
     console.error('Error fetching leads:', error);
@@ -32,45 +21,37 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    
-    const result = await query(`
-      INSERT INTO leads (name, email, phone, budget, interest, stage, score, agent, source, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-      body.name,
-      body.email,
-      body.phone,
-      body.budget,
-      body.interest,
-      body.stage || 'New',
-      body.score || 50,
-      body.agent,
-      body.source,
-      body.notes
-    ]) as ResultSetHeader;
-    
-    const newLead = await query(`
-      SELECT 
-        id,
-        name,
-        email,
-        phone,
-        budget,
-        interest,
-        stage,
-        score,
-        agent,
-        source,
-        notes,
-        created_at as date
-      FROM leads 
-      WHERE id = ?
-    `, [result.insertId]) as any[];
-    
-    return NextResponse.json({ data: newLead[0] }, { status: 201 });
-  } catch (error) {
-    console.error('Error creating lead:', error);
-    return NextResponse.json({ error: "Failed to create lead" }, { status: 500 });
+
+    if (!body.name || !body.email) {
+      return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
+    }
+
+    const payload = {
+      id: randomUUID(),
+      name: body.name,
+      email: body.email,
+      phone: body.phone,
+      budget: body.budget,
+      interest: body.interest,
+      stage: body.stage ?? 'New',
+      score: Number(body.score ?? 50),
+      agent: body.agent,
+      source: body.source,
+      notes: body.notes,
+    };
+
+    const { data: newLead, error } = await supabase
+      .from('Lead')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ data: newLead }, { status: 201 });
+  } catch (error: any) {
+    console.error('Error creating lead:', error.message ?? error);
+    return NextResponse.json({ error: error.message ?? "Failed to create lead" }, { status: 500 });
   }
 }
 
@@ -78,24 +59,23 @@ export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
     
-    await query(`
-      UPDATE leads 
-      SET name = ?, email = ?, phone = ?, budget = ?, interest = ?, 
-          stage = ?, score = ?, agent = ?, source = ?, notes = ?
-      WHERE id = ?
-    `, [
-      body.name,
-      body.email,
-      body.phone,
-      body.budget,
-      body.interest,
-      body.stage,
-      body.score,
-      body.agent,
-      body.source,
-      body.notes,
-      body.id
-    ]);
+    const { error } = await supabase
+      .from('Lead')
+      .update({
+        name: body.name,
+        email: body.email,
+        phone: body.phone,
+        budget: body.budget,
+        interest: body.interest,
+        stage: body.stage,
+        score: body.score,
+        agent: body.agent,
+        source: body.source,
+        notes: body.notes,
+      })
+      .eq('id', body.id);
+    
+    if (error) throw error;
     
     return NextResponse.json({ message: "Lead updated successfully" });
   } catch (error) {
@@ -113,7 +93,12 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Lead ID required" }, { status: 400 });
     }
     
-    await query('DELETE FROM leads WHERE id = ?', [id]);
+    const { error } = await supabase
+      .from('Lead')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
     
     return NextResponse.json({ message: "Lead deleted successfully" });
   } catch (error) {

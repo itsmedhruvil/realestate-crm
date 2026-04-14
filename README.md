@@ -1,6 +1,6 @@
-# EstateOS — Real Estate CRM
+c# EstateOS — Real Estate CRM
 
-A full-featured real estate CRM built with Next.js 14, MongoDB, Tailwind CSS, shadcn/ui, and Recharts. Dark mode, mobile responsive, Vercel-style minimal UI.
+A full-featured real estate CRM built with Next.js 14, Supabase (PostgreSQL), Prisma, Tailwind CSS, shadcn/ui, and Recharts. Dark mode, mobile responsive, Vercel-style minimal UI.
 
 ## Features
 
@@ -17,7 +17,7 @@ A full-featured real estate CRM built with Next.js 14, MongoDB, Tailwind CSS, sh
 ## Tech Stack
 
 - **Framework**: Next.js 14 (App Router)
-- **Database**: MongoDB via Mongoose
+- **Database**: Supabase (PostgreSQL) + Prisma ORM
 - **UI**: Tailwind CSS + shadcn/ui components
 - **Charts**: Recharts (AreaChart, BarChart, LineChart, PieChart, RadarChart)
 - **Icons**: Lucide React

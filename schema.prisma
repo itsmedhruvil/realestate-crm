@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Lead {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  name      String
+  email     String
+  phone     String?
+  budget    String?
+  interest  String?
+  stage     String   @default("New")
+  score     Int      @default(50)
+  agent     String?
+  source    String?
+  notes     String?
+  activities Activity[]
+}
+
+model Property {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  name        String
+  location    String?
+  price       String?
+  type        String?
+  status      String   @default("available")
+  beds        Int?
+  baths       Int?
+  sqft        Int?
+  agent       String?
+  description String?
+  images      String[]
+  activities  Activity[]
+}
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  name      String
+  email     String?
+  phone     String?
+  role      String?
+  leads     Int      @default(0)
+  closed    Int      @default(0)
+  revenue   String?
+}
+
+model SiteVisit {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  client    String?
+  property  String?
+  agent     String?
+  date      DateTime?
+  time      String?
+  status    String    @default("pending")
+  notes     String?
+}
+
+model Payment {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  client       String?
+  property     String?
+  amount       Float?
+  type         String?
+  dueDate      DateTime?
+  status       String    @default("scheduled")
+  reminderSent Boolean   @default(false)
+}
+
+model Activity {
+  id                String    @id @default(uuid())
+  createdAt         DateTime  @default(now())
+  type              String?
+  text              String?
+  agent             String?
+  relatedLeadId     String?
+  relatedPropertyId String?
+  lead              Lead?     @relation(fields: [relatedLeadId], references: [id])
+  property          Property? @relation(fields: [relatedPropertyId], references: [id])
+}

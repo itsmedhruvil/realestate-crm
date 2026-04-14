@@ -1,21 +1,66 @@
+import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    await connectDB();
-    return NextResponse.json({ data: [] });
-  } catch {
-    return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
+    const teamMembers = await prisma.teamMember.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    
+    return NextResponse.json({ data: teamMembers });
+  } catch (error) {
+    console.error('Error fetching team members:', error);
+    return NextResponse.json({ error: "Failed to fetch team members" }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
     const body = await req.json();
-    return NextResponse.json({ data: body }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Failed to create" }, { status: 500 });
+    
+    const newTeamMember = await prisma.teamMember.create({
+      data: {
+        id: randomUUID(),
+        name: body.name,
+        email: body.email,
+        phone: body.phone,
+        role: body.role,
+        leads: body.leads ?? 0,
+        closed: body.closed ?? 0,
+        revenue: body.revenue,
+      }
+    });
+    
+    return NextResponse.json({ data: newTeamMember }, { status: 201 });
+  } catch (error) {
+    console.error('Error adding team member:', error);
+    return NextResponse.json({ error: "Failed to add team member" }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const body = await req.json();
+    
+    await prisma.teamMember.update({
+      where: { id: body.id },
+      data: {
+        name: body.name,
+        email: body.email,
+        phone: body.phone,
+        role: body.role,
+        leads: body.leads,
+        closed: body.closed,
+        revenue: body.revenue,
+      }
+    });
+    
+    return NextResponse.json({ message: "Team member updated successfully" });
+  } catch (error) {
+    console.error('Error updating team member:', error);
+    return NextResponse.json({ error: "Failed to update team member" }, { status: 500 });
   }
 }
