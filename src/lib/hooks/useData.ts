@@ -7,9 +7,9 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 // Generic data hook with built-in caching, deduplication, and revalidation
 export function useData<T>(endpoint: string, options = {}) {
   const { data, error, isLoading, mutate } = useSWR(endpoint, fetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    revalidateIfStale: false,
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+    revalidateIfStale: true,
     dedupingInterval: 300000, // 5 minutes cache
     keepPreviousData: true,
     ...options

@@ -47,6 +47,38 @@ export async function POST(request: Request) {
   }
 }
 
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    if (!body.id) {
+      return NextResponse.json({ error: 'Client ID is required for update' }, { status: 400 });
+    }
+
+    const { data: updatedClient, error } = await supabase
+      .from('Client')
+      .update({
+        name: body.name,
+        email: body.email,
+        phone: body.phone,
+        budget: body.budget,
+        propertyInterest: body.propertyInterest,
+        status: body.status,
+        assignedAgent: body.assignedAgent,
+        notes: body.notes,
+      })
+      .eq('id', body.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ data: updatedClient });
+  } catch (error: any) {
+    console.error('Error updating client:', error);
+    return NextResponse.json({ error: error?.message ?? 'Failed to update client' }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

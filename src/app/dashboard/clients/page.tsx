@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Plus,
   Phone,
@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import AddClientModal from "../AddClientModal";
+import { useClients } from "@/lib/hooks/useData";
 
 interface Client {
   id: string;
@@ -46,33 +47,11 @@ export default function ClientsPage() {
   const [view, setView] = useState<"list" | "grid">("list");
   const [showAddModal, setShowAddModal] = useState(false);
   const [selected, setSelected] = useState<Client | null>(null);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
-  const fetchClients = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/clients");
-      const data = await res.json();
-      if (res.ok && Array.isArray(data.data)) {
-        setClients(data.data);
-      } else {
-        console.error("Clients fetch failed", data);
-        toast.error("Failed to load clients");
-      }
-    } catch (error) {
-      console.error("Clients fetch error", error);
-      toast.error("Failed to load clients");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: clients = [], isLoading: loading, mutate } = useClients<Client[]>();
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this client?")) return;
@@ -83,11 +62,40 @@ export default function ClientsPage() {
       if (!res.ok) throw new Error(result?.error || "Delete failed");
       toast.success("Client deleted");
       setSelected(null);
-      fetchClients();
+      setClientToEdit(null);
+      await mutate();
     } catch (error: any) {
       console.error("Delete client error", error);
       toast.error(error.message || "Failed to delete client. Please try again.");
     }
+  };
+
+  const handleClientAdd = async () => {
+    await mutate();
+  };
+
+  const handleClientSave = async (clientData: any) => {
+    const method = clientToEdit ? "PUT" : "POST";
+    const url = "/api/clients";
+
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(clientToEdit ? { ...clientData, id: clientToEdit.id } : clientData),
+    });
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(result?.error || "Failed to save client");
+    }
+
+    setClientToEdit(null);
+    await mutate();
+  };
+
+  const openEditClient = (client: Client) => {
+    setSelected(null);
+    setClientToEdit(client);
+    setShowAddModal(true);
   };
 
   const filteredClients = useMemo(() => {
@@ -174,7 +182,10 @@ export default function ClientsPage() {
             ))}
           </div>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setClientToEdit(null);
+              setShowAddModal(true);
+            }}
             className="flex items-center gap-2 bg-foreground text-background px-4 py-2 rounded-lg text-xs font-medium hover:opacity-90 transition-opacity"
           >
             <Plus className="w-3.5 h-3.5" /> Add Client
@@ -182,7 +193,15 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      <AddClientModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onAdd={fetchClients} />
+      <AddClientModal
+        isOpen={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setClientToEdit(null);
+        }}
+        onSave={handleClientSave}
+        client={clientToEdit}
+      />
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-24 bg-card border border-border border-dashed rounded-3xl">
@@ -406,7 +425,10 @@ export default function ClientsPage() {
               >
                 <Trash2 className="w-4 h-4" /> Delete
               </button>
-              <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg">
+              <button
+                onClick={() => openEditClient(selected)}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg"
+              >
                 <Edit className="w-4 h-4" /> Edit Client
               </button>
             </div>

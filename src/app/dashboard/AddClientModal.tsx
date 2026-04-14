@@ -1,17 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, User, Mail, Phone, DollarSign, FileText, MessageSquare, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+
+interface ClientFormData {
+  name: string;
+  email: string;
+  phone: string;
+  budget: string;
+  propertyInterest: string;
+  status: string;
+  notes: string;
+}
+
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  budget?: string;
+  propertyInterest?: string;
+  status?: string;
+  notes?: string;
+}
 
 interface AddClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: () => void;
+  onSave: (clientData: ClientFormData) => Promise<void>;
+  client?: Client | null;
 }
 
-export default function AddClientModal({ isOpen, onClose, onAdd }: AddClientModalProps) {
-  const [formData, setFormData] = useState({
+export default function AddClientModal({ isOpen, onClose, onSave, client }: AddClientModalProps) {
+  const [formData, setFormData] = useState<ClientFormData>({
     name: "",
     email: "",
     phone: "",
@@ -22,28 +44,44 @@ export default function AddClientModal({ isOpen, onClose, onAdd }: AddClientModa
   });
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (client) {
+      setFormData({
+        name: client.name || "",
+        email: client.email || "",
+        phone: client.phone || "",
+        budget: client.budget || "",
+        propertyInterest: client.propertyInterest || "",
+        status: client.status || "Active",
+        notes: client.notes || "",
+      });
+    } else {
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        budget: "",
+        propertyInterest: "",
+        status: "Active",
+        notes: "",
+      });
+    }
+  }, [client, isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name) return toast.error("Name is required");
-    
+
     setLoading(true);
     try {
-      const res = await fetch('/api/clients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (!res.ok) throw new Error('Failed to add client');
-
-      toast.success("Client added successfully");
-      onAdd();
+      await onSave(formData);
+      toast.success(client ? "Client updated successfully" : "Client added successfully");
       onClose();
       setFormData({ name: "", email: "", phone: "", budget: "", propertyInterest: "", status: "Active", notes: "" });
-    } catch (error) {
-      toast.error("Failed to save client");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to save client");
     } finally {
       setLoading(false);
     }
@@ -53,7 +91,7 @@ export default function AddClientModal({ isOpen, onClose, onAdd }: AddClientModa
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-background border border-border w-full max-w-2xl rounded-2xl p-8 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-foreground">Add New Client</h2>
+          <h2 className="text-lg font-semibold text-foreground">{client ? "Edit Client" : "Add New Client"}</h2>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg text-muted-foreground"><X className="w-5 h-5" /></button>
         </div>
 
@@ -156,7 +194,7 @@ export default function AddClientModal({ isOpen, onClose, onAdd }: AddClientModa
             disabled={loading}
             className="w-full mt-4 bg-foreground text-background py-3 rounded-xl font-medium hover:opacity-90 transition-all disabled:opacity-50"
           >
-            {loading ? "Creating..." : "Create Client"}
+            {loading ? (client ? "Saving..." : "Creating...") : client ? "Save Changes" : "Create Client"}
           </button>
         </form>
       </div>
