@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useState, useEffect } from "react";
+import { FormEvent, useState } from "react";
 import { Plus, Phone, Mail, Filter, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { toast } from "sonner";
+import { useLeads } from "@/lib/hooks/useData";
 
 const stageOrder = ["New", "Cold", "Warm", "Hot", "Negotiating", "Closed"];
 const stageColors: Record<string, string> = {
@@ -36,8 +37,6 @@ interface Lead {
 export default function LeadsPage() {
   const [view, setView] = useState<"list" | "kanban">("list");
   const [selected, setSelected] = useState<Lead | null>(null);
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -52,21 +51,7 @@ export default function LeadsPage() {
     notes: ""
   });
 
-  const fetchLeads = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch('/api/leads');
-      const data = await res.json();
-      if (data.data) {
-        setLeads(data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch leads:', error);
-      toast.error('Failed to load leads');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: leads, isLoading: loading, mutate } = useLeads<Lead[]>();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,20 +79,17 @@ export default function LeadsPage() {
         source: "",
         notes: "",
       });
-      fetchLeads();
+      mutate();
     } catch (error: any) {
       toast.error(error.message || 'Failed to add lead');
       console.error(error);
     }
   };
 
-  useEffect(() => {
-    fetchLeads();
-  }, []);
 
   const leadsByStageData = stageOrder.slice(0, 5).map((s) => ({
     stage: s,
-    count: leads.filter((l) => l.stage === s).length,
+    count: (leads || []).filter((l) => l.stage === s).length,
   }));
 
   return (
@@ -116,11 +98,11 @@ export default function LeadsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 grid grid-cols-3 gap-3">
           {[
-            { label: "Total Leads", value: leads.length.toString() },
-            { label: "Hot Leads", value: leads.filter((l) => l.stage === "Hot").length.toString() },
+            { label: "Total Leads", value: (leads?.length || 0).toString() },
+            { label: "Hot Leads", value: (leads || []).filter((l) => l.stage === "Hot").length.toString() },
             {
               label: "Avg Score",
-              value: leads.length ? Math.round(leads.reduce((a, l) => a + l.score, 0) / leads.length).toString() : "0",
+              value: leads?.length ? Math.round(leads.reduce((a, l) => a + l.score, 0) / leads.length).toString() : "0",
             },
           ].map((s) => (
             <div key={s.label} className="bg-card border border-border rounded-xl p-4">
@@ -172,7 +154,7 @@ export default function LeadsPage() {
               <button onClick={() => setShowAddModal(false)} className="text-muted-foreground hover:text-foreground text-2xl leading-none">×</button>
             </div>
 
-            <form onSubmit={(e: FormEvent<HTMLFormElement>) => handleSubmit(e)} className="grid gap-6">
+            <form autoComplete="off" onSubmit={(e: FormEvent<HTMLFormElement>) => handleSubmit(e)} className="grid gap-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <label className="space-y-2">
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</span>
@@ -317,7 +299,7 @@ export default function LeadsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {leads.map((lead) => {
+                {(leads || []).map((lead) => {
                   const sc = scoreColor(lead.score);
                   return (
                     <tr key={lead.id} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setSelected(lead)}>
@@ -358,7 +340,7 @@ export default function LeadsPage() {
       {view === "kanban" && (
         <div className="flex gap-4 overflow-x-auto pb-4">
           {stageOrder.map((stage) => {
-            const stageLeads = leads.filter((l) => l.stage === stage);
+            const stageLeads = (leads || []).filter((l) => l.stage === stage);
             return (
               <div key={stage} className="flex-shrink-0 w-64 bg-card border border-border rounded-xl flex flex-col" style={{ maxHeight: "calc(100vh - 300px)" }}>
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">

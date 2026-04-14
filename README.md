@@ -34,18 +34,22 @@ cd estateos-crm
 npm install
 ```
 
-### 2. Set Up MongoDB
+### 2. Set Up Supabase & Prisma
 
-1. Go to [MongoDB Atlas](https://www.mongodb.com/atlas) and create a free cluster
-2. Create a database user
-3. Whitelist your IP (or use 0.0.0.0/0 for dev)
-4. Get your connection string
+1. Create a new project on [Supabase](https://supabase.com/).
+2. Navigate to **Project Settings > Database** to get your connection string.
+3. Ensure you have your `DATABASE_URL` (and `DIRECT_URL` if using connection pooling).
+4. Push your schema to the database:
+   ```bash
+   npx prisma db push
+   ```
 
 ### 3. Configure Environment
 
 ```bash
 cp .env.example .env.local
-# Edit .env.local with your MongoDB URI
+# Edit .env.local with your Supabase connection string
+DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres"
 ```
 
 ### 4. Run Development Server

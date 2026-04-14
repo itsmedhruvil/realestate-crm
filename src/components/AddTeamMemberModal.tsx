@@ -86,7 +86,7 @@ export default function AddTeamMemberModal({ isOpen, onClose, onAddMember }: Add
 
         <h3 className="text-lg font-semibold text-foreground mb-4">Add Team Member</h3>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form autoComplete="off" onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Name</label>
             <div className="relative">

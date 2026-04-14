@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, FormEvent } from "react";
 import { Plus, ChevronLeft, ChevronRight, MapPin, Clock, User } from "lucide-react";
 import { toast } from "sonner";
+import { useVisits } from "@/lib/hooks/useData";
 
 interface SiteVisit {
   id: string;
@@ -16,10 +17,8 @@ interface SiteVisit {
 }
 
 export default function SiteVisitsPage() {
-  const [visits, setVisits] = useState<SiteVisit[]>([]);
   const [selectedDay, setSelectedDay] = useState<number>(new Date().getDate());
   const [showModal, setShowModal] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -32,30 +31,13 @@ export default function SiteVisitsPage() {
     status: "pending"
   });
 
-  const fetchVisits = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/visits");
-      const json = await res.json();
-      if (json.data) {
-        const loaded = json.data as SiteVisit[];
-        setVisits(loaded);
-        const firstDate = loaded[0]?.date;
-        if (firstDate) {
-          setSelectedDay(new Date(firstDate).getDate());
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load site visits:", error);
-      toast.error("Could not load site visits.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: visits = [], isLoading: loading, mutate } = useVisits<SiteVisit[]>();
 
   useEffect(() => {
-    fetchVisits();
-  }, []);
+    if (visits.length > 0 && visits[0].date) {
+      setSelectedDay(new Date(visits[0].date).getDate());
+    }
+  }, [visits]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -72,7 +54,7 @@ export default function SiteVisitsPage() {
 
       toast.success("Site visit scheduled!");
       setShowModal(false);
-      fetchVisits();
+      mutate();
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -209,7 +191,7 @@ export default function SiteVisitsPage() {
               <h2 className="text-base font-medium text-foreground">Schedule Site Visit</h2>
               <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground text-xl">×</button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form autoComplete="off" onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Client</label>
                 <input

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Phone, Mail, TrendingUp, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { toast } from "sonner";
 import AddTeamMemberModal from "@/components/AddTeamMemberModal";
+import { useTeam } from "@/lib/hooks/useData";
 
 interface TeamMember {
   id: string;
@@ -13,6 +14,8 @@ interface TeamMember {
   email?: string;
   phone?: string;
   revenue?: string;
+  leads?: number;
+  closed?: number;
   joinedDate?: string;
 }
 
@@ -25,34 +28,14 @@ function parseRevenueValue(revenue?: string) {
 }
 
 export default function TeamPage() {
-  const [team, setTeam] = useState<TeamMember[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchTeam = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch("/api/team");
-        const json = await res.json();
-        if (json.data) {
-          setTeam(json.data as TeamMember[]);
-        }
-      } catch (error) {
-        console.error("Failed to load team members:", error);
-        toast.error("Could not load team members.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTeam();
-  }, []);
+  const { data: team = [], isLoading: loading, mutate } = useTeam<TeamMember[]>();
 
   const stats = useMemo(() => {
     const totalAgents = team.length;
-    const leadsHandled = totalAgents * 12;
-    const closedDeals = totalAgents * 3;
+    const leadsHandled = team.reduce((sum, m) => sum + (m.leads || 0), 0);
+    const closedDeals = team.reduce((sum, m) => sum + (m.closed || 0), 0);
     const avgDealSize = totalAgents > 0 ? `₹${(team.reduce((sum, member) => sum + parseRevenueValue(member.revenue), 0) / totalAgents).toFixed(0)}L` : "-";
     const conversionRate = totalAgents > 0 ? `${Math.round((closedDeals / leadsHandled) * 100)}%` : "-";
 
@@ -63,7 +46,7 @@ export default function TeamPage() {
     () => team.map((member) => ({
       name: member.name.split(" ")[0],
       revenue: parseRevenueValue(member.revenue),
-      leads: 12,
+      leads: member.leads || 0,
     })),
     [team]
   );
@@ -121,7 +104,10 @@ export default function TeamPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {team.map((member) => {
-          const convRate = 25;
+          const leads = member.leads || 0;
+          const closed = member.closed || 0;
+          const convRate = leads > 0 ? Math.round((closed / leads) * 100) : 0;
+          
           return (
             <div key={member.id} className="bg-card border border-border rounded-xl p-5 hover:bg-muted/50 transition-colors cursor-pointer">
               <div className="flex items-center gap-3 mb-4">
@@ -192,10 +178,7 @@ export default function TeamPage() {
             throw new Error("Failed to add team member");
           }
 
-          const json = await res.json();
-          if (json.data) {
-            setTeam(prev => [...prev, json.data]);
-          }
+          mutate();
         }}
       />
     </div>

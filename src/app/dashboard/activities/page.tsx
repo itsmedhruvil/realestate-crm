@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Phone, Home, FileText, DollarSign, Calendar, CheckCircle2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { toast } from "sonner";
+import { useActivities } from "@/lib/hooks/useData";
 
 interface Activity {
   id: string;
@@ -53,28 +54,7 @@ function formatRelativeTime(dateString: string) {
 }
 
 export default function ActivitiesPage() {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch("/api/activities");
-        const json = await res.json();
-        if (json.data) {
-          setActivities(json.data as Activity[]);
-        }
-      } catch (error) {
-        console.error("Failed to fetch activities:", error);
-        toast.error("Could not load activities.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchActivities();
-  }, []);
+  const { data: activities = [], isLoading: loading } = useActivities<Activity[]>();
 
   const activityCountsByType = useMemo(() => {
     return activities.reduce<Record<string, number>>((acc, activity) => {

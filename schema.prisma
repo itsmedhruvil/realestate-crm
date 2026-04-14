@@ -63,6 +63,7 @@ model SiteVisit {
   time      String?
   status    String    @default("pending")
   notes     String?
+  clientRel Client?   @relation(fields: [client], references: [id])
 }
 
 model Payment {
@@ -75,6 +76,23 @@ model Payment {
   dueDate      DateTime?
   status       String    @default("scheduled")
   reminderSent Boolean   @default(false)
+  clientRel    Client?   @relation(fields: [client], references: [id])
+}
+
+model Client {
+  id                String    @id @default(uuid())
+  createdAt         DateTime  @default(now())
+  name              String
+  email             String
+  phone             String?
+  budget            String?
+  propertyInterest  String?
+  status            String    @default("Active")
+  assignedAgent     String?
+  notes             String?
+  activities        Activity[]
+  payments          Payment[]
+  siteVisits        SiteVisit[]
 }
 
 model Activity {
@@ -85,6 +103,8 @@ model Activity {
   agent             String?
   relatedLeadId     String?
   relatedPropertyId String?
+  relatedClientId   String?
   lead              Lead?     @relation(fields: [relatedLeadId], references: [id])
   property          Property? @relation(fields: [relatedPropertyId], references: [id])
+  client            Client?   @relation(fields: [relatedClientId], references: [id])
 }

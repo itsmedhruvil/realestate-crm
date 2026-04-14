@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ElementType, FormEvent } from "react";
+import { useMemo, useState, type ElementType, FormEvent } from "react";
 import { AlertCircle, Clock, CheckCircle2, Bell, Plus, Download, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { toast } from "sonner";
+import { usePayments } from "@/lib/hooks/useData";
 
 interface Payment {
   id: string;
@@ -23,9 +24,7 @@ const statusConfig: Record<string, { icon: ElementType; label: string; badge: st
 };
 
 export default function PaymentsPage() {
-  const [payments, setPayments] = useState<Payment[]>([]);
   const [filter, setFilter] = useState("all");
-  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -38,25 +37,7 @@ export default function PaymentsPage() {
     status: "pending"
   });
 
-  const fetchPayments = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/payments");
-      const json = await res.json();
-      if (json.data) {
-        setPayments(json.data as Payment[]);
-      }
-    } catch (error) {
-      console.error("Failed to load payments:", error);
-      toast.error("Could not load payments.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPayments();
-  }, []);
+  const { data: payments = [], isLoading: loading, mutate } = usePayments<Payment[]>();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -70,7 +51,7 @@ export default function PaymentsPage() {
       if (!res.ok) throw new Error("Failed to add payment reminder");
       toast.success("Payment reminder added!");
       setShowAddModal(false);
-      fetchPayments();
+      mutate();
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -98,17 +79,35 @@ export default function PaymentsPage() {
     };
   }, [payments]);
 
-  const chartData = useMemo(
-    () => [
-      { month: "Jan", collected: 35, target: 45 },
-      { month: "Feb", collected: 48, target: 50 },
-      { month: "Mar", collected: 62, target: 65 },
-      { month: "Apr", collected: 58, target: 60 },
-      { month: "May", collected: 70, target: 68 },
-      { month: "Jun", collected: 82, target: 75 },
-    ],
-    []
-  );
+  const chartData = useMemo(() => {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const now = new Date();
+    const last6 = [];
+    
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      last6.push({
+        label: months[d.getMonth()],
+        monthIdx: d.getMonth(),
+        year: d.getFullYear(),
+        collected: 0,
+        target: 0
+      });
+    }
+
+    payments.forEach(p => {
+      if (!p.dueDate || !p.amount) return;
+      const date = new Date(p.dueDate);
+      const bucket = last6.find(b => b.monthIdx === date.getMonth() && b.year === date.getFullYear());
+      if (bucket) {
+        const amt = p.amount / 100000;
+        bucket.target += amt;
+        if (p.status === "completed") bucket.collected += amt;
+      }
+    });
+
+    return last6.map(b => ({ month: b.label, collected: Number(b.collected.toFixed(1)), target: Number(b.target.toFixed(1)) }));
+  }, [payments]);
 
   return (
     <div className="p-4 lg:p-6 space-y-5">
@@ -231,7 +230,7 @@ export default function PaymentsPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form autoComplete="off" onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Client</label>
                 <input

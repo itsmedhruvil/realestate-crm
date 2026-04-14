@@ -5,6 +5,8 @@ import { Building2, Bed, Maximize2, MapPin, Plus, Search, Eye, Edit2, Upload, X 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { CldUploadButton } from 'next-cloudinary';
 import { toast } from "sonner";
+import { useProperties } from "@/lib/hooks/useData";
+import { useTeam, useLeads } from "@/lib/hooks/useData";
 
 interface Property {
   id: string;
@@ -17,6 +19,7 @@ interface Property {
   baths?: number;
   sqft?: number;
   agent?: string;
+  client?: string;
   images?: string[];
 }
 
@@ -44,11 +47,9 @@ function parsePriceValue(price?: string) {
 }
 
 export default function PropertiesPage() {
-  const [properties, setProperties] = useState<Property[]>([]);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     id: "",
@@ -58,31 +59,17 @@ export default function PropertiesPage() {
     beds: "",
     baths: "",
     sqft: "",
+    agent: "",
+    client: "",
     status: "available",
     images: [] as string[]
   });
   const [editMode, setEditMode] = useState(false);
   const [viewProperty, setViewProperty] = useState<Property | null>(null);
 
-  const fetchProperties = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/properties");
-      const json = await res.json();
-      if (json.data) {
-        setProperties(json.data as Property[]);
-      }
-    } catch (error) {
-      console.error("Failed to load properties:", error);
-      toast.error("Could not load properties.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProperties();
-  }, []);
+  const { data: properties = [], isLoading: loading, mutate } = useProperties<Property[]>();
+  const { data: team = [] } = useTeam<any[]>();
+  const { data: leads = [] } = useLeads<any[]>();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({
@@ -108,6 +95,8 @@ export default function PropertiesPage() {
         baths: formData.baths ? parseInt(formData.baths) : null,
         sqft: formData.sqft ? parseInt(formData.sqft) : null,
         status: formData.status.toLowerCase(),
+        agent: formData.agent,
+        client: formData.client,
         images: formData.images
       };
 
@@ -133,13 +122,7 @@ export default function PropertiesPage() {
 
       if (!res.ok) throw new Error("Failed to save property");
       
-      if (!editMode) {
-        const json = await res.json();
-        setProperties(prev => [json.data, ...prev]);
-      } else {
-        // Refresh list after update
-        await fetchProperties();
-      }
+      mutate();
       
       setShowModal(false);
       setEditMode(false);
@@ -174,6 +157,8 @@ export default function PropertiesPage() {
       baths: property.baths?.toString() || "",
       sqft: property.sqft?.toString() || "",
       status: property.status,
+      agent: property.agent || "",
+      client: property.client || "",
       images: property.images || []
     });
     setShowModal(true);
@@ -359,6 +344,32 @@ export default function PropertiesPage() {
                   />
                 </div>
               ))}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Assigned Agent</label>
+                  <select
+                    name="agent"
+                    value={formData.agent}
+                    onChange={handleInputChange}
+                    className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none"
+                  >
+                    <option value="">Select Agent</option>
+                    {team.map((m: any) => <option key={m.id} value={m.name}>{m.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-1.5">Client</label>
+                  <select
+                    name="client"
+                    value={formData.client}
+                    onChange={handleInputChange}
+                    className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none"
+                  >
+                    <option value="">Select Client</option>
+                    {leads.map((l: any) => <option key={l.id} value={l.name}>{l.name}</option>)}
+                  </select>
+                </div>
+              </div>
               <div className="grid grid-cols-3 gap-3">
                 {[["Bedrooms", "beds", "3"], ["Bathrooms", "baths", "2"], ["Sq. ft.", "sqft", "1500"]].map(([label, name, placeholder]) => (
                   <div key={label}>
