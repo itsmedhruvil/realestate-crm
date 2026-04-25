@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { canAccessApiPath, canAccessPath } from "@/lib/auth/roles";
 
 const protectedRoutes = ["/dashboard"];
 const authRoutes = ["/signin", "/register"];
@@ -54,8 +55,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  if (isProtectedRoute(pathname) && user && !canAccessPath(user.user_metadata?.role, pathname)) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   if (pathname.startsWith("/api/") && !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (pathname.startsWith("/api/") && user && !canAccessApiPath(user.user_metadata?.role, pathname)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   if (isAuthRoute(pathname) && user) {

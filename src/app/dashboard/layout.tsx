@@ -28,6 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { isAdminRole, navItemsForRole } from "@/lib/auth/roles";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -268,6 +269,11 @@ export default function DashboardLayout({
       .slice(0, 8);
   }, [searchQuery, searchRecords]);
 
+  const visibleNavItems = useMemo(
+    () => navItemsForRole(accountProfile.role, navItems),
+    [accountProfile.role]
+  );
+
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const firstResult = searchResults[0];
@@ -340,7 +346,7 @@ export default function DashboardLayout({
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-0.5 scrollbar-thin">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             return (
               <Link
@@ -365,17 +371,19 @@ export default function DashboardLayout({
 
         {/* Bottom Actions */}
         <div className="border-t border-border p-2 space-y-0.5 shrink-0">
-          <Link
-            href="/dashboard/settings"
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all",
-              collapsed && "justify-center px-2"
-            )}
-            title={collapsed ? "Settings" : undefined}
-          >
-            <Settings className="w-4 h-4 shrink-0" />
-            {!collapsed && <span>Settings</span>}
-          </Link>
+          {isAdminRole(accountProfile.role) && (
+            <Link
+              href="/dashboard/settings"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all",
+                collapsed && "justify-center px-2"
+              )}
+              title={collapsed ? "Settings" : undefined}
+            >
+              <Settings className="w-4 h-4 shrink-0" />
+              {!collapsed && <span>Settings</span>}
+            </Link>
+          )}
           <button
             type="button"
             onClick={handleLogout}
@@ -528,14 +536,16 @@ export default function DashboardLayout({
                       <Mail className="w-4 h-4" />
                       Notifications
                     </Link>
-                    <Link
-                      href="/dashboard/settings"
-                      onClick={closeMenus}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                    >
-                      <Settings className="w-4 h-4" />
-                      Settings
-                    </Link>
+                    {isAdminRole(accountProfile.role) && (
+                      <Link
+                        href="/dashboard/settings"
+                        onClick={closeMenus}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Settings
+                      </Link>
+                    )}
                     <button
                       type="button"
                       onClick={handleLogout}

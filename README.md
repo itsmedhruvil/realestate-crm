@@ -52,11 +52,14 @@ cp .env.example .env.local
 DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres"
 NEXT_PUBLIC_SUPABASE_URL="https://[REF].supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your_supabase_anon_or_publishable_key"
+SUPABASE_SERVICE_ROLE_KEY="your_server_only_supabase_service_role_key"
 ```
 
 Use the Supabase anon or publishable key for `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 Do not use a secret or service-role key in any `NEXT_PUBLIC_*` variable because
 those values are shipped to the browser.
+Use `SUPABASE_SERVICE_ROLE_KEY` only as a server-side variable. It is required
+for admin-created team member logins and invite emails.
 
 ### 4. Run Development Server
 

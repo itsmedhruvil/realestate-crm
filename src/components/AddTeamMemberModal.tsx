@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { X, User, Mail, Phone, Briefcase, DollarSign } from "lucide-react";
 import { toast } from "sonner";
+import { appRoles } from "@/lib/auth/roles";
 
 interface TeamMember {
   id: string;
@@ -30,7 +31,7 @@ export default function AddTeamMemberModal({ isOpen, onClose, onSave, member }: 
     revenue?: string;
   }>({
     name: "",
-    role: "",
+    role: "Sales Agent",
     email: "",
     phone: "",
     revenue: "",
@@ -42,7 +43,7 @@ export default function AddTeamMemberModal({ isOpen, onClose, onSave, member }: 
     if (member) {
       setFormData({
         name: member.name,
-        role: member.role,
+        role: member.role || "Sales Agent",
         email: member.email || "",
         phone: member.phone || "",
         revenue: member.revenue || "",
@@ -50,7 +51,7 @@ export default function AddTeamMemberModal({ isOpen, onClose, onSave, member }: 
     } else {
       setFormData({
         name: "",
-        role: "",
+        role: "Sales Agent",
         email: "",
         phone: "",
         revenue: "",
@@ -71,12 +72,17 @@ export default function AddTeamMemberModal({ isOpen, onClose, onSave, member }: 
       return;
     }
 
+    if (!member && !formData.email) {
+      toast.error("Email is required to create a login invite");
+      return;
+    }
+
     setLoading(true);
     try {
       await onSave(formData);
       setFormData({
         name: "",
-        role: "",
+        role: "Sales Agent",
         email: "",
         phone: "",
         revenue: "",
@@ -84,7 +90,7 @@ export default function AddTeamMemberModal({ isOpen, onClose, onSave, member }: 
       toast.success(member ? "Team member updated successfully" : "Team member added successfully");
       onClose();
     } catch (error) {
-      toast.error(member ? "Failed to update team member" : "Failed to add team member");
+      toast.error(error instanceof Error ? error.message : member ? "Failed to update team member" : "Failed to add team member");
       console.error("Failed to save team member:", error);
     } finally {
       setLoading(false);
@@ -128,15 +134,19 @@ export default function AddTeamMemberModal({ isOpen, onClose, onSave, member }: 
             <label className="text-sm font-medium text-foreground">Role</label>
             <div className="relative">
               <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <input
-                type="text"
+              <select
                 name="role"
                 value={formData.role}
-                onChange={handleChange}
-                placeholder="Sales Executive"
+                onChange={(event) => setFormData((prev) => ({ ...prev, role: event.target.value }))}
                 className="pl-10 pr-4 py-2 border border-border rounded-lg w-full focus:outline-none focus:border-foreground bg-background text-foreground"
                 required
-              />
+              >
+                {appRoles.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -151,8 +161,14 @@ export default function AddTeamMemberModal({ isOpen, onClose, onSave, member }: 
                 onChange={handleChange}
                 placeholder="john@example.com"
                 className="pl-10 pr-4 py-2 border border-border rounded-lg w-full focus:outline-none focus:border-foreground bg-background text-foreground"
+                required={!member}
               />
             </div>
+            {!member && (
+              <p className="text-xs leading-5 text-muted-foreground">
+                A Supabase password setup invite will be sent to this email.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
