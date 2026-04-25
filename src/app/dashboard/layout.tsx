@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -62,13 +63,15 @@ type AccountProfile = {
   name: string;
   email: string;
   phone?: string;
+  role?: string;
   avatar?: string | null;
 };
 
 const defaultAccountProfile: AccountProfile = {
-  name: "Admin User",
-  email: "admin@propdesk.in",
-  phone: "+91 98765 43210",
+  name: "Account",
+  email: "",
+  phone: "",
+  role: "",
   avatar: null,
 };
 
@@ -91,8 +94,21 @@ function accountInitials(name: string) {
       .map((word) => word[0])
       .join("")
       .slice(0, 2)
-      .toUpperCase() || "AD"
+      .toUpperCase() || "AC"
   );
+}
+
+function profileFromUser(user: SupabaseUser): AccountProfile {
+  const metadata = user.user_metadata || {};
+  const name = stringValue(metadata.full_name) || stringValue(metadata.name) || user.email?.split("@")[0] || "Account";
+
+  return {
+    name,
+    email: user.email || "",
+    phone: stringValue(metadata.phone),
+    role: stringValue(metadata.role),
+    avatar: stringValue(metadata.avatar) || null,
+  };
 }
 
 function AccountAvatar({
@@ -134,6 +150,8 @@ export default function DashboardLayout({
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     const readStoredProfile = () => {
       const storedProfile = window.localStorage.getItem(accountProfileStorageKey);
       if (!storedProfile) {
@@ -149,16 +167,32 @@ export default function DashboardLayout({
       }
     };
 
+    const loadSupabaseProfile = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user || cancelled) {
+        readStoredProfile();
+        return;
+      }
+
+      const profile = profileFromUser(user);
+      window.localStorage.setItem(accountProfileStorageKey, JSON.stringify(profile));
+      setAccountProfile({ ...defaultAccountProfile, ...profile });
+    };
+
     const handleAccountUpdated = (event: Event) => {
       const profile = (event as CustomEvent<AccountProfile>).detail;
       setAccountProfile({ ...defaultAccountProfile, ...profile });
     };
 
-    readStoredProfile();
+    loadSupabaseProfile();
     window.addEventListener("storage", readStoredProfile);
     window.addEventListener("propdesk-account-updated", handleAccountUpdated);
 
     return () => {
+      cancelled = true;
       window.removeEventListener("storage", readStoredProfile);
       window.removeEventListener("propdesk-account-updated", handleAccountUpdated);
     };

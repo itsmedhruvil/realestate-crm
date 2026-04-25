@@ -20,6 +20,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const isRegister = mode === "register";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [role, setRole] = useState("Sales Agent");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -44,6 +46,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
           options: {
             data: {
               full_name: name,
+              phone,
+              role,
             },
           },
         });
@@ -130,17 +134,42 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {isRegister && (
-                <label className="block space-y-2">
-                  <span className="text-xs font-medium text-muted-foreground">Full name</span>
-                  <input
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    required
-                    autoComplete="name"
-                    className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Your name"
-                  />
-                </label>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block space-y-2 sm:col-span-2">
+                    <span className="text-xs font-medium text-muted-foreground">Full name</span>
+                    <input
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      required
+                      autoComplete="name"
+                      className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                      placeholder="Your name"
+                    />
+                  </label>
+                  <label className="block space-y-2">
+                    <span className="text-xs font-medium text-muted-foreground">Phone</span>
+                    <input
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      required
+                      autoComplete="tel"
+                      className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                      placeholder="+91 98765 43210"
+                    />
+                  </label>
+                  <label className="block space-y-2">
+                    <span className="text-xs font-medium text-muted-foreground">Role</span>
+                    <select
+                      value={role}
+                      onChange={(event) => setRole(event.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option>Administrator</option>
+                      <option>Manager</option>
+                      <option>Sales Agent</option>
+                    </select>
+                  </label>
+                </div>
               )}
 
               <label className="block space-y-2">

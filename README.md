@@ -48,9 +48,15 @@ npm install
 
 ```bash
 cp .env.example .env.local
-# Edit .env.local with your Supabase connection string
+# Edit .env.local with your Supabase connection string and public auth key
 DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres"
+NEXT_PUBLIC_SUPABASE_URL="https://[REF].supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your_supabase_anon_or_publishable_key"
 ```
+
+Use the Supabase anon or publishable key for `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+Do not use a secret or service-role key in any `NEXT_PUBLIC_*` variable because
+those values are shipped to the browser.
 
 ### 4. Run Development Server
 

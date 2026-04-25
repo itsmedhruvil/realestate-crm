@@ -12,6 +12,9 @@ import {
   Trash2,
   User,
 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 const accountProfileStorageKey = "propdesk-account-profile";
 
@@ -36,32 +39,82 @@ const defaultNotifications = preferences.reduce<Record<string, boolean>>((values
   return values;
 }, {});
 
+function stringValue(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+function profileFromUser(user: SupabaseUser): AccountProfile {
+  const metadata = user.user_metadata || {};
+
+  return {
+    name: stringValue(metadata.full_name) || stringValue(metadata.name) || user.email?.split("@")[0] || "",
+    email: user.email || "",
+    phone: stringValue(metadata.phone),
+    role: stringValue(metadata.role) || "Sales Agent",
+    avatar: stringValue(metadata.avatar) || null,
+    notifications:
+      metadata.notifications && typeof metadata.notifications === "object"
+        ? { ...defaultNotifications, ...(metadata.notifications as Record<string, boolean>) }
+        : defaultNotifications,
+  };
+}
+
 export default function AccountPage() {
-  const [name, setName] = useState("Admin User");
-  const [email, setEmail] = useState("admin@propdesk.in");
-  const [phone, setPhone] = useState("+91 98765 43210");
-  const [role, setRole] = useState("Administrator");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [role, setRole] = useState("Sales Agent");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Record<string, boolean>>(defaultNotifications);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    const storedProfile = window.localStorage.getItem(accountProfileStorageKey);
-    if (!storedProfile) return;
+    let cancelled = false;
 
-    try {
-      const profile = JSON.parse(storedProfile) as Partial<AccountProfile>;
-      if (profile.name) setName(profile.name);
-      if (profile.email) setEmail(profile.email);
-      if (profile.phone) setPhone(profile.phone);
-      if (profile.role) setRole(profile.role);
-      if (profile.avatar) setAvatarPreview(profile.avatar);
-      if (profile.notifications) {
-        setNotifications({ ...defaultNotifications, ...profile.notifications });
+    const applyProfile = (profile: Partial<AccountProfile>) => {
+      setName(profile.name || "");
+      setEmail(profile.email || "");
+      setPhone(profile.phone || "");
+      setRole(profile.role || "Sales Agent");
+      setAvatarPreview(profile.avatar || null);
+      setNotifications({ ...defaultNotifications, ...profile.notifications });
+    };
+
+    const loadAccount = async () => {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (cancelled) return;
+
+      if (error || !user) {
+        const storedProfile = window.localStorage.getItem(accountProfileStorageKey);
+        if (storedProfile) {
+          try {
+            applyProfile(JSON.parse(storedProfile) as Partial<AccountProfile>);
+          } catch {
+            window.localStorage.removeItem(accountProfileStorageKey);
+          }
+        }
+        setLoading(false);
+        return;
       }
-    } catch {
-      window.localStorage.removeItem(accountProfileStorageKey);
-    }
+
+      const profile = profileFromUser(user);
+      applyProfile(profile);
+      window.localStorage.setItem(accountProfileStorageKey, JSON.stringify(profile));
+      window.dispatchEvent(new CustomEvent("propdesk-account-updated", { detail: profile }));
+      setLoading(false);
+    };
+
+    loadAccount();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const initials = useMemo(
@@ -72,7 +125,7 @@ export default function AccountPage() {
         .map((word) => word[0])
         .join("")
         .slice(0, 2)
-        .toUpperCase() || "AD",
+        .toUpperCase() || "AC",
     [name]
   );
 
@@ -90,7 +143,7 @@ export default function AccountPage() {
     reader.readAsDataURL(file);
   };
 
-  const saveAccountChanges = () => {
+  const saveAccountChanges = async () => {
     const profile: AccountProfile = {
       name,
       email,
@@ -100,9 +153,31 @@ export default function AccountPage() {
       notifications,
     };
 
+    setSaving(true);
+    setSaved(false);
+
+    const { error } = await supabase.auth.updateUser({
+      email,
+      data: {
+        full_name: name,
+        phone,
+        role,
+        avatar: avatarPreview,
+        notifications,
+      },
+    });
+
+    setSaving(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
     window.localStorage.setItem(accountProfileStorageKey, JSON.stringify(profile));
     window.dispatchEvent(new CustomEvent("propdesk-account-updated", { detail: profile }));
     setSaved(true);
+    toast.success("Account profile saved.");
   };
 
   const accountStats = [
@@ -151,10 +226,11 @@ export default function AccountPage() {
             <button
               type="button"
               onClick={saveAccountChanges}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:opacity-90 transition-all"
+              disabled={loading || saving}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:opacity-90 transition-all disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Save className="h-4 w-4" />
-              Save Changes
+              {saving ? "Saving..." : "Save Changes"}
             </button>
             {saved && <span className="text-xs font-medium text-muted-foreground">Changes saved</span>}
           </div>
