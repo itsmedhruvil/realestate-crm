@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, User, Mail, Phone, Briefcase, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,10 +17,11 @@ interface TeamMember {
 interface AddTeamMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddMember: (member: Omit<TeamMember, "id" | "joinedDate">) => Promise<void>;
+  onSave: (member: Omit<TeamMember, "id" | "joinedDate">) => Promise<void>;
+  member?: TeamMember | null;
 }
 
-export default function AddTeamMemberModal({ isOpen, onClose, onAddMember }: AddTeamMemberModalProps) {
+export default function AddTeamMemberModal({ isOpen, onClose, onSave, member }: AddTeamMemberModalProps) {
   const [formData, setFormData] = useState<{
     name: string;
     role: string;
@@ -37,6 +38,26 @@ export default function AddTeamMemberModal({ isOpen, onClose, onAddMember }: Add
 
   const [loading, setLoading] = useState(false);
 
+  React.useEffect(() => {
+    if (member) {
+      setFormData({
+        name: member.name,
+        role: member.role,
+        email: member.email || "",
+        phone: member.phone || "",
+        revenue: member.revenue || "",
+      });
+    } else {
+      setFormData({
+        name: "",
+        role: "",
+        email: "",
+        phone: "",
+        revenue: "",
+      });
+    }
+  }, [member, isOpen]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -52,7 +73,7 @@ export default function AddTeamMemberModal({ isOpen, onClose, onAddMember }: Add
 
     setLoading(true);
     try {
-      await onAddMember(formData);
+      await onSave(formData);
       setFormData({
         name: "",
         role: "",
@@ -60,11 +81,11 @@ export default function AddTeamMemberModal({ isOpen, onClose, onAddMember }: Add
         phone: "",
         revenue: "",
       });
-      toast.success("Team member added successfully");
+      toast.success(member ? "Team member updated successfully" : "Team member added successfully");
       onClose();
     } catch (error) {
-      toast.error("Failed to add team member");
-      console.error("Failed to add team member:", error);
+      toast.error(member ? "Failed to update team member" : "Failed to add team member");
+      console.error("Failed to save team member:", error);
     } finally {
       setLoading(false);
     }
@@ -84,7 +105,7 @@ export default function AddTeamMemberModal({ isOpen, onClose, onAddMember }: Add
           <X className="w-5 h-5 text-foreground" />
         </button>
 
-        <h3 className="text-lg font-semibold text-foreground mb-4">Add Team Member</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-4">{member ? "Edit Team Member" : "Add Team Member"}</h3>
 
         <form autoComplete="off" onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -177,7 +198,7 @@ export default function AddTeamMemberModal({ isOpen, onClose, onAddMember }: Add
               disabled={loading}
               className="flex-1 px-4 py-2 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {loading ? "Adding..." : "Add Member"}
+              {loading ? (member ? "Saving..." : "Adding...") : member ? "Save Changes" : "Add Member"}
             </button>
           </div>
         </form>

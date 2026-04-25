@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Phone, Mail, TrendingUp, Plus } from "lucide-react";
+import { Phone, Mail, TrendingUp, Plus, Eye, Edit2, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { toast } from "sonner";
 import AddTeamMemberModal from "@/components/AddTeamMemberModal";
@@ -29,6 +29,8 @@ function parseRevenueValue(revenue?: string) {
 
 export default function TeamPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
 
   const { data: team = [], isLoading: loading, mutate } = useTeam<TeamMember[]>();
 
@@ -44,6 +46,36 @@ export default function TeamPage() {
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete team member');
     }
+  };
+
+  const openTeamMemberDetails = (member: TeamMember) => {
+    setSelectedMember(member);
+  };
+
+  const openEditTeamMember = (member: TeamMember) => {
+    setMemberToEdit(member);
+    setIsModalOpen(true);
+  };
+
+  const closeMemberModal = () => {
+    setMemberToEdit(null);
+    setIsModalOpen(false);
+  };
+
+  const handleSaveTeamMember = async (member: Omit<TeamMember, "id" | "joinedDate">) => {
+    const method = memberToEdit ? 'PUT' : 'POST';
+    const body = memberToEdit ? { ...member, id: memberToEdit.id } : member;
+    const res = await fetch('/api/team', {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(result?.error || 'Failed to save team member');
+    }
+
+    await mutate();
   };
 
   const stats = useMemo(() => {
@@ -109,7 +141,10 @@ export default function TeamPage() {
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-foreground">Team Members</h3>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setMemberToEdit(null);
+            setIsModalOpen(true);
+          }}
           className="flex items-center gap-2 bg-foreground text-background px-4 py-2 rounded-lg text-xs font-medium hover:opacity-90 transition-opacity"
         >
           <Plus className="w-3.5 h-3.5" /> Add Member
@@ -123,20 +158,34 @@ export default function TeamPage() {
           const convRate = leads > 0 ? Math.round((closed / leads) * 100) : 0;
           
           return (
-            <div key={member.id} className="bg-card border border-border rounded-xl p-5 hover:bg-muted/50 transition-colors cursor-pointer">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-base font-semibold text-foreground shrink-0">
-                  {member.name.split(" ").map((word) => word[0]).join("").slice(0, 2).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{member.name}</p>
-                  <p className="text-xs text-muted-foreground">{member.role}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3 text-foreground" />
-                    <span className="text-xs font-medium text-foreground">{member.revenue ? `${parseRevenueValue(member.revenue)}L` : "-"}</span>
+            <div key={member.id} className="bg-card border border-border rounded-xl p-5 hover:bg-muted/50 transition-colors">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-base font-semibold text-foreground shrink-0">
+                    {member.name.split(" ").map((word) => word[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">{member.name}</p>
+                    <p className="text-xs text-muted-foreground">{member.role}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openTeamMemberDetails(member)}
+                    className="p-2 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+                    title="View details"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEditTeamMember(member)}
+                    className="p-2 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+                    title="Edit member"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
@@ -185,23 +234,67 @@ export default function TeamPage() {
 
       <AddTeamMemberModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAddMember={async (member) => {
-          const res = await fetch("/api/team", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(member),
-          });
-          
-          if (!res.ok) {
-            throw new Error("Failed to add team member");
-          }
-
-          mutate();
-        }}
+        onClose={closeMemberModal}
+        onSave={handleSaveTeamMember}
+        member={memberToEdit}
       />
+
+      {selectedMember && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setSelectedMember(null)}>
+          <div className="bg-background border border-border rounded-2xl p-6 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground uppercase tracking-[0.2em] mb-2">Team Member</p>
+                <h2 className="text-2xl font-semibold text-foreground">{selectedMember.name}</h2>
+                <p className="text-sm text-muted-foreground mt-1">{selectedMember.role}</p>
+              </div>
+              <button onClick={() => setSelectedMember(null)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 mb-5">
+              <div className="rounded-2xl bg-muted p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">Email</p>
+                <p className="text-sm text-foreground">{selectedMember.email || "Not provided"}</p>
+              </div>
+              <div className="rounded-2xl bg-muted p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">Phone</p>
+                <p className="text-sm text-foreground">{selectedMember.phone || "Not provided"}</p>
+              </div>
+              <div className="rounded-2xl bg-muted p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">Revenue</p>
+                <p className="text-sm text-foreground">{selectedMember.revenue || "N/A"}</p>
+              </div>
+              <div className="rounded-2xl bg-muted p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">Joined</p>
+                <p className="text-sm text-foreground">{selectedMember.joinedDate || "N/A"}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setMemberToEdit(selectedMember);
+                  setIsModalOpen(true);
+                  setSelectedMember(null);
+                }}
+                className="flex-1 bg-foreground text-background py-3 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                Edit Member
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedMember(null)}
+                className="flex-1 bg-muted text-foreground py-3 rounded-xl text-sm font-medium hover:bg-muted/80 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
