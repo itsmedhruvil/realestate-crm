@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, Loader2, Lock, Mail, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { useSignIn, useSignUp } from "@clerk/nextjs/legacy";
 
 type AuthMode = "signin" | "register";
 
@@ -18,6 +18,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") || "/dashboard";
   const isRegister = mode === "register";
+  const { signIn, isLoaded: isSignInLoaded, setActive: setSignInActive } = useSignIn();
+  const { signUp, isLoaded: isSignUpLoaded, setActive: setSignUpActive } = useSignUp();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -40,38 +42,61 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
     try {
       if (isRegister) {
-        const { data, error } = await supabase.auth.signUp({
-          email,
+        if (!isSignUpLoaded || !signUp) {
+          toast.error("Sign up is not ready yet.");
+          return;
+        }
+
+        const result = await signUp.create({
+          emailAddress: email,
           password,
-          options: {
-            data: {
-              full_name: name,
+        });
+
+        if (result.status === "missing_requirements") {
+          await signUp.update({
+            firstName: name,
+            unsafeMetadata: {
               phone,
               role,
             },
-          },
-        });
+          });
 
-        if (error) throw error;
+          const emailResult = await signUp.prepareEmailAddressVerification();
+          if (emailResult.status === "missing_requirements") {
+            toast.success("Account created! Check your email for the verification code.");
+            router.push("/signin?next=" + encodeURIComponent(nextPath));
+            return;
+          }
+        }
 
-        if (!data.session) {
-          toast.success("Account created. Check your email to confirm your account.");
-          router.push("/signin");
-          return;
+        if (result.status === "complete") {
+          if (setSignUpActive) {
+            await setSignUpActive({ session: result.createdSessionId });
+          }
+          router.replace(nextPath);
+          router.refresh();
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
+        if (!isSignInLoaded || !signIn) {
+          toast.error("Sign in is not ready yet.");
+          return;
+        }
+
+        const result = await signIn.create({
+          identifier: email,
           password,
         });
 
-        if (error) throw error;
+        if (result.status === "complete" && setSignInActive) {
+          await setSignInActive({ session: result.createdSessionId });
+          router.replace(nextPath);
+          router.refresh();
+        } else {
+          throw new Error("Sign in failed. Please check your credentials.");
+        }
       }
-
-      router.replace(nextPath);
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Authentication failed.");
+    } catch (error: any) {
+      toast.error(error?.errors?.[0]?.longMessage || error?.message || "Authentication failed.");
     } finally {
       setLoading(false);
     }
@@ -220,7 +245,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || (isRegister ? !isSignUpLoaded : !isSignInLoaded)}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading && <Loader2 className="h-4 w-4 animate-spin" />}

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -26,8 +26,7 @@ import {
   Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
-import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { isAdminRole, navItemsForRole } from "@/lib/auth/roles";
 
 const navItems = [
@@ -58,24 +57,6 @@ const searchSources = [
   { endpoint: "/api/payments", type: "Payment", href: "/dashboard/payments", fields: ["client", "property", "status", "dueDate"] },
 ];
 
-const accountProfileStorageKey = "propdesk-account-profile";
-
-type AccountProfile = {
-  name: string;
-  email: string;
-  phone?: string;
-  role?: string;
-  avatar?: string | null;
-};
-
-const defaultAccountProfile: AccountProfile = {
-  name: "Account",
-  email: "",
-  phone: "",
-  role: "",
-  avatar: null,
-};
-
 function stringValue(value: unknown) {
   if (value == null) return "";
   if (typeof value === "string") return value;
@@ -99,25 +80,12 @@ function accountInitials(name: string) {
   );
 }
 
-function profileFromUser(user: SupabaseUser): AccountProfile {
-  const metadata = user.user_metadata || {};
-  const name = stringValue(metadata.full_name) || stringValue(metadata.name) || user.email?.split("@")[0] || "Account";
-
-  return {
-    name,
-    email: user.email || "",
-    phone: stringValue(metadata.phone),
-    role: stringValue(metadata.role),
-    avatar: stringValue(metadata.avatar) || null,
-  };
-}
-
 function AccountAvatar({
   profile,
   className,
   textClassName,
 }: {
-  profile: AccountProfile;
+  profile: { name: string; avatar?: string | null };
   className: string;
   textClassName?: string;
 }) {
@@ -144,60 +112,28 @@ export default function DashboardLayout({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchRecords, setSearchRecords] = useState<SearchRecord[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [accountProfile, setAccountProfile] = useState<AccountProfile>(defaultAccountProfile);
   const pathname = usePathname();
   const router = useRouter();
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const { user, isLoaded } = useUser();
+  const { signOut } = useClerk();
 
-    const readStoredProfile = () => {
-      const storedProfile = window.localStorage.getItem(accountProfileStorageKey);
-      if (!storedProfile) {
-        setAccountProfile(defaultAccountProfile);
-        return;
-      }
-
-      try {
-        setAccountProfile({ ...defaultAccountProfile, ...JSON.parse(storedProfile) });
-      } catch {
-        window.localStorage.removeItem(accountProfileStorageKey);
-        setAccountProfile(defaultAccountProfile);
-      }
+  const accountProfile = useMemo(() => {
+    if (!user) {
+      return { name: "Account", email: "", phone: "", role: "", avatar: null as string | null };
+    }
+    const metadata = user.unsafeMetadata || {};
+    const name = user.fullName || user.primaryEmailAddress?.emailAddress?.split("@")[0] || "Account";
+    return {
+      name,
+      email: user.primaryEmailAddress?.emailAddress || "",
+      phone: stringValue(metadata.phone),
+      role: stringValue(metadata.role) || "Sales Agent",
+      avatar: user.imageUrl || null,
     };
-
-    const loadSupabaseProfile = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user || cancelled) {
-        readStoredProfile();
-        return;
-      }
-
-      const profile = profileFromUser(user);
-      window.localStorage.setItem(accountProfileStorageKey, JSON.stringify(profile));
-      setAccountProfile({ ...defaultAccountProfile, ...profile });
-    };
-
-    const handleAccountUpdated = (event: Event) => {
-      const profile = (event as CustomEvent<AccountProfile>).detail;
-      setAccountProfile({ ...defaultAccountProfile, ...profile });
-    };
-
-    loadSupabaseProfile();
-    window.addEventListener("storage", readStoredProfile);
-    window.addEventListener("propdesk-account-updated", handleAccountUpdated);
-
-    return () => {
-      cancelled = true;
-      window.removeEventListener("storage", readStoredProfile);
-      window.removeEventListener("propdesk-account-updated", handleAccountUpdated);
-    };
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -274,7 +210,7 @@ export default function DashboardLayout({
     [accountProfile.role]
   );
 
-  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
+  const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const firstResult = searchResults[0];
     if (firstResult) {
@@ -290,15 +226,24 @@ export default function DashboardLayout({
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await signOut();
     } finally {
-      window.localStorage.removeItem(accountProfileStorageKey);
-      setAccountProfile(defaultAccountProfile);
       setAccountOpen(false);
       setMobileOpen(false);
       router.push("/logout");
     }
   };
+
+  if (!isLoaded) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <TrendingUp className="w-5 h-5 animate-pulse" />
+          <span className="text-sm">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">

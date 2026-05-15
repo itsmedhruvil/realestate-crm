@@ -3,13 +3,14 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { useClerk } from "@clerk/nextjs";
 
 export default function LogoutPage() {
+  const { signOut } = useClerk();
+
   useEffect(() => {
-    supabase.auth.signOut();
-    window.localStorage.removeItem("propdesk-account-profile");
-  }, []);
+    signOut();
+  }, [signOut]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -19,7 +20,7 @@ export default function LogoutPage() {
         </div>
         <h1 className="mt-5 text-2xl font-semibold text-foreground">You are signed out</h1>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Your local CRM session has been cleared from this browser.
+          Your CRM session has been cleared from this browser.
         </p>
         <Link
           href="/signin"

@@ -13,19 +13,7 @@ import {
   User,
 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
-import type { User as SupabaseUser } from "@supabase/supabase-js";
-
-const accountProfileStorageKey = "propdesk-account-profile";
-
-type AccountProfile = {
-  name: string;
-  email: string;
-  phone: string;
-  role: string;
-  avatar?: string | null;
-  notifications: Record<string, boolean>;
-};
+import { useUser, useClerk } from "@clerk/nextjs";
 
 const preferences = [
   "New lead assignments",
@@ -43,23 +31,9 @@ function stringValue(value: unknown) {
   return typeof value === "string" ? value : "";
 }
 
-function profileFromUser(user: SupabaseUser): AccountProfile {
-  const metadata = user.user_metadata || {};
-
-  return {
-    name: stringValue(metadata.full_name) || stringValue(metadata.name) || user.email?.split("@")[0] || "",
-    email: user.email || "",
-    phone: stringValue(metadata.phone),
-    role: stringValue(metadata.role) || "Sales Agent",
-    avatar: stringValue(metadata.avatar) || null,
-    notifications:
-      metadata.notifications && typeof metadata.notifications === "object"
-        ? { ...defaultNotifications, ...(metadata.notifications as Record<string, boolean>) }
-        : defaultNotifications,
-  };
-}
-
 export default function AccountPage() {
+  const { user, isLoaded } = useUser();
+  const { session } = useClerk();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -71,51 +45,23 @@ export default function AccountPage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-
-    const applyProfile = (profile: Partial<AccountProfile>) => {
-      setName(profile.name || "");
-      setEmail(profile.email || "");
-      setPhone(profile.phone || "");
-      setRole(profile.role || "Sales Agent");
-      setAvatarPreview(profile.avatar || null);
-      setNotifications({ ...defaultNotifications, ...profile.notifications });
-    };
-
-    const loadAccount = async () => {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
-
-      if (cancelled) return;
-
-      if (error || !user) {
-        const storedProfile = window.localStorage.getItem(accountProfileStorageKey);
-        if (storedProfile) {
-          try {
-            applyProfile(JSON.parse(storedProfile) as Partial<AccountProfile>);
-          } catch {
-            window.localStorage.removeItem(accountProfileStorageKey);
-          }
-        }
-        setLoading(false);
-        return;
-      }
-
-      const profile = profileFromUser(user);
-      applyProfile(profile);
-      window.localStorage.setItem(accountProfileStorageKey, JSON.stringify(profile));
-      window.dispatchEvent(new CustomEvent("propdesk-account-updated", { detail: profile }));
+    if (!isLoaded || !user) {
       setLoading(false);
-    };
+      return;
+    }
 
-    loadAccount();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    const metadata = user.unsafeMetadata || {};
+    setName(user.fullName || "");
+    setEmail(user.primaryEmailAddress?.emailAddress || "");
+    setPhone(stringValue(metadata.phone));
+    setRole(stringValue(metadata.role) || "Sales Agent");
+    setAvatarPreview(user.imageUrl || null);
+    setNotifications({
+      ...defaultNotifications,
+      ...(metadata.notifications as Record<string, boolean> | undefined),
+    });
+    setLoading(false);
+  }, [user, isLoaded]);
 
   const initials = useMemo(
     () =>
@@ -144,40 +90,29 @@ export default function AccountPage() {
   };
 
   const saveAccountChanges = async () => {
-    const profile: AccountProfile = {
-      name,
-      email,
-      phone,
-      role,
-      avatar: avatarPreview,
-      notifications,
-    };
+    if (!user) return;
 
     setSaving(true);
     setSaved(false);
 
-    const { error } = await supabase.auth.updateUser({
-      email,
-      data: {
-        full_name: name,
-        phone,
-        role,
-        avatar: avatarPreview,
-        notifications,
-      },
-    });
+    try {
+      await user.update({
+        firstName: name,
+        unsafeMetadata: {
+          phone,
+          role,
+          avatar: avatarPreview,
+          notifications,
+        },
+      });
 
-    setSaving(false);
-
-    if (error) {
-      toast.error(error.message);
-      return;
+      setSaved(true);
+      toast.success("Account profile saved.");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to save account.");
+    } finally {
+      setSaving(false);
     }
-
-    window.localStorage.setItem(accountProfileStorageKey, JSON.stringify(profile));
-    window.dispatchEvent(new CustomEvent("propdesk-account-updated", { detail: profile }));
-    setSaved(true);
-    toast.success("Account profile saved.");
   };
 
   const accountStats = [

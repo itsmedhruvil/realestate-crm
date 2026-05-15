@@ -1,5 +1,5 @@
-import { prisma } from './prisma';
-import { randomUUID } from 'crypto';
+import { connectDB } from './mongodb';
+import { Activity } from './models';
 
 type ActivityType = 
   | 'property_created'
@@ -25,19 +25,16 @@ interface LogActivityOptions {
 
 export async function logActivity(options: LogActivityOptions) {
   try {
-    await prisma.activity.create({
-      data: {
-        id: randomUUID(),
-        type: options.type,
-        text: options.text,
-        agent: options.agent || 'System',
-        relatedLeadId: options.relatedLeadId,
-        relatedPropertyId: options.relatedPropertyId
-      }
+    await connectDB();
+    await Activity.create({
+      type: options.type,
+      text: options.text,
+      agent: options.agent || 'System',
+      relatedLeadId: options.relatedLeadId,
+      relatedPropertyId: options.relatedPropertyId,
     });
     console.log(`[Activity Logged] ${options.type}: ${options.text}`);
   } catch (error) {
     console.error('Failed to log activity:', error);
-    // Don't throw error - activity logging shouldn't break main functionality
   }
 }

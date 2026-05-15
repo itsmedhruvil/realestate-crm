@@ -1,19 +1,11 @@
-import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { connectDB } from "@/lib/mongodb";
+import { Activity } from "@/lib/models";
 
 export async function GET() {
   try {
-    const activities = await prisma.activity.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        lead: true, // Include related lead data if needed
-        property: true, // Include related property data if needed
-      }
-    });
-    
+    await connectDB();
+    const activities = await Activity.find().sort({ createdAt: -1 });
     return NextResponse.json({ data: activities });
   } catch (error) {
     console.error('Error fetching activities:', error);
@@ -23,17 +15,15 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    await connectDB();
     const body = await req.json();
-    
-    const newActivity = await prisma.activity.create({
-      data: {
-        id: randomUUID(),
-        type: body.type,
-        text: body.text,
-        agent: body.agent,
-        lead: body.relatedLeadId ? { connect: { id: body.relatedLeadId } } : undefined,
-        property: body.relatedPropertyId ? { connect: { id: body.relatedPropertyId } } : undefined,
-      }
+
+    const newActivity = await Activity.create({
+      type: body.type,
+      text: body.text,
+      agent: body.agent,
+      relatedLeadId: body.relatedLeadId,
+      relatedPropertyId: body.relatedPropertyId,
     });
     
     return NextResponse.json({ data: newActivity }, { status: 201 });
@@ -45,17 +35,15 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    await connectDB();
     const body = await req.json();
     
-    await prisma.activity.update({
-      where: { id: body.id },
-      data: {
-        type: body.type,
-        text: body.text,
-        agent: body.agent,
-        lead: body.relatedLeadId ? { connect: { id: body.relatedLeadId } } : undefined,
-        property: body.relatedPropertyId ? { connect: { id: body.relatedPropertyId } } : undefined,
-      }
+    await Activity.findByIdAndUpdate(body.id, {
+      type: body.type,
+      text: body.text,
+      agent: body.agent,
+      relatedLeadId: body.relatedLeadId,
+      relatedPropertyId: body.relatedPropertyId,
     });
     
     return NextResponse.json({ message: "Activity updated successfully" });
@@ -67,6 +55,7 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    await connectDB();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
@@ -74,7 +63,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Activity ID required" }, { status: 400 });
     }
 
-    await prisma.activity.delete({ where: { id } });
+    await Activity.findByIdAndDelete(id);
     return NextResponse.json({ message: "Activity deleted successfully" });
   } catch (error) {
     console.error('Error deleting activity:', error);

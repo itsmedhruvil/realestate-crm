@@ -6,8 +6,8 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { toast } from "sonner";
 import AddTeamMemberModal from "@/components/AddTeamMemberModal";
 import { useTeam } from "@/lib/hooks/useData";
+import { useUser } from "@clerk/nextjs";
 import { isAdminRole } from "@/lib/auth/roles";
-import { supabase } from "@/lib/supabase";
 
 interface TeamMember {
   id: string;
@@ -33,29 +33,10 @@ export default function TeamPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user } = useUser();
+  const isAdmin = isAdminRole(user?.unsafeMetadata?.role);
 
   const { data: team = [], isLoading: loading, mutate } = useTeam<TeamMember[]>();
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadRole = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!cancelled) {
-        setIsAdmin(isAdminRole(user?.user_metadata?.role));
-      }
-    };
-
-    loadRole();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const handleDeleteTeamMember = async (id: string) => {
     if (!isAdmin) {
@@ -195,7 +176,7 @@ export default function TeamPage() {
           const leads = member.leads || 0;
           const closed = member.closed || 0;
           const convRate = leads > 0 ? Math.round((closed / leads) * 100) : 0;
-          
+
           return (
             <div key={member.id} className="bg-card border border-border rounded-xl p-5 hover:bg-muted/50 transition-colors">
               <div className="flex items-start justify-between gap-3 mb-4">
