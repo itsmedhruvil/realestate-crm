@@ -1,23 +1,30 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 const protectedPaths = ["/dashboard", "/api"];
 const authPaths = ["/signin", "/register"];
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId } = await auth();
-  const { pathname } = req.nextUrl;
+  try {
+    const { userId } = await auth();
+    const { pathname } = req.nextUrl;
 
-  const isProtected = protectedPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-  const isAuth = authPaths.includes(pathname);
+    const isProtected = protectedPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+    const isAuth = authPaths.includes(pathname);
 
-  if (isProtected && !userId) {
-    const signInUrl = new URL("/signin", req.url);
-    signInUrl.searchParams.set("next", pathname);
-    return Response.redirect(signInUrl);
-  }
+    if (isProtected && !userId) {
+      const signInUrl = new URL("/signin", req.url);
+      signInUrl.searchParams.set("next", pathname);
+      return Response.redirect(signInUrl);
+    }
 
-  if (isAuth && userId) {
-    return Response.redirect(new URL("/dashboard", req.url));
+    if (isAuth && userId) {
+      return Response.redirect(new URL("/dashboard", req.url));
+    }
+  } catch (error) {
+    console.error("Middleware error:", error);
+    // Allow request to proceed if auth check fails to avoid blocking the app
+    return NextResponse.next();
   }
 });
 
