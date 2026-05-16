@@ -36,6 +36,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Name and email are required." }, { status: 400 });
     }
 
+    // Look up the Clerk user by email so we can update their role metadata
+    const { clerkClient } = await import("@clerk/nextjs/server");
+    const clerk = await clerkClient();
+    const clerkUsers = await clerk.users.getUserList({ emailAddress: [email] });
+    if (clerkUsers.totalCount > 0) {
+      const clerkUser = clerkUsers.data[0];
+      await clerk.users.updateUser(clerkUser.id, {
+        unsafeMetadata: {
+          ...clerkUser.unsafeMetadata,
+          role,
+        },
+      });
+    }
+
     const newTeamMember = await TeamMember.create({
       name: body.name,
       email,
@@ -68,6 +82,20 @@ export async function PUT(req: NextRequest) {
 
     if (!body.id || !body.name || !email) {
       return NextResponse.json({ error: "ID, name, and email are required." }, { status: 400 });
+    }
+
+    // Sync role to Clerk metadata on update
+    const { clerkClient } = await import("@clerk/nextjs/server");
+    const clerk = await clerkClient();
+    const clerkUsers = await clerk.users.getUserList({ emailAddress: [email] });
+    if (clerkUsers.totalCount > 0) {
+      const clerkUser = clerkUsers.data[0];
+      await clerk.users.updateUser(clerkUser.id, {
+        unsafeMetadata: {
+          ...clerkUser.unsafeMetadata,
+          role,
+        },
+      });
     }
 
     await TeamMember.findByIdAndUpdate(body.id, {

@@ -5,7 +5,7 @@ const protectedPaths = ["/dashboard"];
 const authPaths = ["/signin", "/register"];
 
 // API routes that should be publicly accessible
-const publicApis = ["/api/inquiries", "/api/properties"];
+const publicApis = ["/api/inquiries", "/api/properties", "/api/webhooks"];
 
 // Public pages accessible without authentication
 const publicPages = ["/listings", "/contact"];
