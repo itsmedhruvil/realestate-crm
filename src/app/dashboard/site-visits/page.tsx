@@ -112,31 +112,31 @@ export default function SiteVisitsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
+        <div key="calendar" className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-foreground">March 2026</h3>
             <div className="flex gap-1">
-              <button className="w-7 h-7 bg-muted rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+              <button key="prev" className="w-7 h-7 bg-muted rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
-              <button className="w-7 h-7 bg-muted rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+              <button key="next" className="w-7 h-7 bg-muted rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-              <div key={i} className="text-center text-xs text-muted-foreground py-1">{d}</div>
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => (
+              <div key={d} className="text-center text-xs text-muted-foreground py-1">{d}</div>
             ))}
           </div>
           <div className="grid grid-cols-7 gap-1">
             {days.map((day, index) => {
-              if (!day) return <div key={index} />;
+              if (!day) return <div key={`empty-${index}`} />;
               const isSelected = day === selectedDay;
               const hasVisit = visitDays.has(day);
               return (
                 <button
-                  key={index}
+                  key={`day-${day}`}
                   onClick={() => setSelectedDay(day)}
                   className={`relative aspect-square flex items-center justify-center text-xs rounded-lg transition-all ${
                     isSelected ? "bg-muted text-foreground font-medium ring-1 ring-border" : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -157,7 +157,7 @@ export default function SiteVisitsPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-3 bg-card border border-border rounded-xl overflow-hidden">
+        <div key="visit-details" className="lg:col-span-3 bg-card border border-border rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <div>
               <h3 className="text-sm font-medium text-foreground">{`Mar ${selectedDay}`} — Visits</h3>
@@ -172,7 +172,7 @@ export default function SiteVisitsPage() {
           </div>
           <div className="p-4 space-y-3">
             {dayVisits.length === 0 ? (
-              <div className="text-center py-10 text-muted-foreground text-sm">No visits scheduled for this day</div>
+              <div key="no-visits" className="text-center py-10 text-muted-foreground text-sm">No visits scheduled for this day</div>
             ) : (
               dayVisits.map((visit) => (
                 <div key={visit.id} className="bg-muted/30 border border-border rounded-xl p-4 hover:bg-muted/50 transition-colors cursor-pointer">
@@ -212,7 +212,7 @@ export default function SiteVisitsPage() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowModal(false)}>
+        <div key="modal-overlay" className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowModal(false)}>
           <div className="bg-background border border-border rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-base font-medium text-foreground">Schedule Site Visit</h2>

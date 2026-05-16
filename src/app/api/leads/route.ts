@@ -13,6 +13,32 @@ export async function GET() {
   }
 }
 
+function calculateLeadScore(body: any): number {
+  let score = 50;
+
+  // Urgency boosts
+  if (body.urgency === "Immediate") score += 25;
+  else if (body.urgency === "This Month") score += 15;
+  else if (body.urgency === "This Quarter") score += 5;
+
+  // Budget-based boost
+  if (body.budget) {
+    const cleaned = body.budget.replace(/,/g, "").replace(/₹/g, "").trim();
+    const numVal = parseFloat(cleaned) || 0;
+    if (/cr/i.test(cleaned) && numVal >= 2) score += 15;
+    else if (/cr/i.test(cleaned)) score += 10;
+    else if (numVal >= 5000000) score += 10;
+    else if (numVal >= 2000000) score += 5;
+  }
+
+  // Stage-based deduction
+  if (body.stage === "New") score += 5;
+  else if (body.stage === "Negotiating") score += 5;
+  else if (body.stage === "Closed") score = Math.min(score, 70);
+
+  return Math.min(Math.max(score, 0), 100);
+}
+
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
@@ -22,6 +48,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
     }
 
+    const score = calculateLeadScore(body);
+
     const newLead = await Lead.create({
       name: body.name,
       email: body.email,
@@ -29,14 +57,15 @@ export async function POST(req: NextRequest) {
       budget: body.budget,
       interest: body.interest,
       stage: body.stage ?? 'New',
-      score: Number(body.score ?? 50),
+      score: Number(score),
+      urgency: body.urgency ?? 'Medium',
       agent: body.agent,
       source: body.source,
       notes: body.notes,
       relatedClientId: body.relatedClientId,
     });
 
-    return NextResponse.json({ data: newLead }, { status: 201 });
+    return NextResponse.json({ data: newLead, calculatedScore: score }, { status: 201 });
   } catch (error) {
     console.error('Error creating lead:', error);
     return NextResponse.json({ error: "Failed to create lead" }, { status: 500 });
@@ -48,6 +77,8 @@ export async function PUT(req: NextRequest) {
     await connectDB();
     const body = await req.json();
 
+    const score = body.urgency ? calculateLeadScore(body) : body.score;
+
     await Lead.findByIdAndUpdate(body.id, {
       name: body.name,
       email: body.email,
@@ -55,7 +86,8 @@ export async function PUT(req: NextRequest) {
       budget: body.budget,
       interest: body.interest,
       stage: body.stage,
-      score: body.score,
+      score: Number(score ?? body.score),
+      urgency: body.urgency,
       agent: body.agent,
       source: body.source,
       notes: body.notes,

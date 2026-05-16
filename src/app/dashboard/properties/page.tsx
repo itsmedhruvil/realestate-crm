@@ -22,6 +22,8 @@ import {
   Tags,
   Check,
   Loader2,
+  Globe,
+  List,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { CldUploadButton } from 'next-cloudinary';
@@ -161,7 +163,7 @@ export default function PropertiesPage() {
   };
 
   // Execute bulk action
-  const executeBulkAction = async () => {
+  const executeBulkAction = async (action: "status" | "delete") => {
     if (selectedIds.size === 0) {
       toast.error("No properties selected");
       return;
@@ -170,7 +172,7 @@ export default function PropertiesPage() {
     try {
       setBulkProcessing(true);
 
-      if (bulkAction === "delete") {
+      if (action === "delete") {
         if (!confirm(`Delete ${selectedIds.size} properties? This action cannot be undone.`)) {
           setBulkProcessing(false);
           return;
@@ -182,8 +184,8 @@ export default function PropertiesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ids: Array.from(selectedIds),
-          operation: bulkAction,
-          value: bulkAction === "status" ? bulkStatusValue : undefined,
+          operation: action,
+          value: action === "status" ? bulkStatusValue : undefined,
         }),
       });
 
@@ -194,7 +196,6 @@ export default function PropertiesPage() {
 
       toast.success(await res.json().then(d => d.message));
       setSelectedIds(new Set());
-      setBulkAction(null);
       mutate();
     } catch (error: any) {
       toast.error(error.message || "Bulk operation failed");
@@ -226,6 +227,10 @@ export default function PropertiesPage() {
   const handleOpenPublicPreview = (propertyId: string) => {
     if (!propertyId) return;
     window.open(`/listings/${propertyId}`, '_blank');
+  };
+
+  const handleOpenAllPublicListings = () => {
+    window.open(`/listings`, '_blank');
   };
 
   const handleSaveProperty = async () => {
@@ -413,85 +418,120 @@ export default function PropertiesPage() {
         </ResponsiveContainer>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search properties..."
-            className="w-full pl-9 pr-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:border-foreground placeholder:text-muted-foreground"
-          />
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {['all', 'available', 'reserved', 'sold'].map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilter(s)}
-              className={`px-3 py-2 text-xs font-medium rounded-lg transition-all capitalize ${filter === s ? "bg-foreground text-background" : "bg-card border border-border text-muted-foreground hover:text-foreground"}`}
-            >
-              {s === 'all' ? `All (${properties.length})` : s}
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-foreground text-background px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity ml-auto"
-        >
-          <Plus className="w-4 h-4" /> Add Property
-        </button>
-      </div>
-
-      {/* Bulk Action Bar */}
-      {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3 animate-in slide-in-from-top-2">
-          <span className="text-sm font-medium text-foreground">
-            {selectedIds.size} selected
-          </span>
-          <div className="flex items-center gap-2 ml-auto">
-            <select
-              value={bulkStatusValue}
-              onChange={(e) => setBulkStatusValue(e.target.value)}
-              className="bg-muted border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none"
-            >
-              <option value="available">Available</option>
-              <option value="reserved">Reserved</option>
-              <option value="sold">Sold</option>
-            </select>
-            <button
-              onClick={() => { setBulkAction("status"); executeBulkAction(); }}
-              disabled={bulkProcessing}
-              className="flex items-center gap-1.5 bg-foreground text-background px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {bulkProcessing && bulkAction === "status" ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Tags className="w-3 h-3" />
-              )}
-              Update Status
-            </button>
-            <button
-              onClick={() => { setBulkAction("delete"); executeBulkAction(); }}
-              disabled={bulkProcessing}
-              className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {bulkProcessing && bulkAction === "delete" ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Trash2 className="w-3 h-3" />
-              )}
-              Delete Selected
-            </button>
-            <button
-              onClick={() => setSelectedIds(new Set())}
-              disabled={bulkProcessing}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2"
-            >
-              Cancel
-            </button>
+      {/* Top Bar - Search, Filters, Actions */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search properties..."
+              className="w-full pl-9 pr-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:border-foreground placeholder:text-muted-foreground"
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {['all', 'available', 'reserved', 'sold'].map((s) => (
+              <button
+                key={s}
+                onClick={() => setFilter(s)}
+                className={`px-3 py-2 text-xs font-medium rounded-lg transition-all capitalize ${filter === s ? "bg-foreground text-background" : "bg-card border border-border text-muted-foreground hover:text-foreground"}`}
+              >
+                {s === 'all' ? `All (${properties.length})` : s}
+              </button>
+            ))}
           </div>
         </div>
-      )}
+
+        {/* Actions Bar */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Add Property */}
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 bg-foreground text-background px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <Plus className="w-4 h-4" /> Add Property
+          </button>
+
+          {/* Preview All Properties */}
+          <button
+            onClick={handleOpenAllPublicListings}
+            className="flex items-center gap-2 bg-card border border-border text-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
+            title="View all public listings"
+          >
+            <Globe className="w-4 h-4" /> Preview All
+          </button>
+
+          {/* Bulk Actions - only show when items selected */}
+          {selectedIds.size > 0 && (
+            <>
+              <div className="w-px h-6 bg-border mx-1" />
+              <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">
+                {selectedIds.size} selected
+              </span>
+              <select
+                value={bulkStatusValue}
+                onChange={(e) => setBulkStatusValue(e.target.value)}
+                className="bg-card border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none"
+              >
+                <option value="available">Available</option>
+                <option value="reserved">Reserved</option>
+                <option value="sold">Sold</option>
+              </select>
+              <button
+                onClick={() => executeBulkAction("status")}
+                disabled={bulkProcessing}
+                className="flex items-center gap-1.5 bg-foreground text-background px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {bulkProcessing ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Tags className="w-3 h-3" />
+                )}
+                Update Status
+              </button>
+              <button
+                onClick={() => executeBulkAction("delete")}
+                disabled={bulkProcessing}
+                className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {bulkProcessing ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3 h-3" />
+                )}
+                Delete Selected
+              </button>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                disabled={bulkProcessing}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2"
+              >
+                Cancel
+              </button>
+            </>
+          )}
+
+          {/* Select All Toggle - only show when there are items */}
+          {filtered.length > 0 && (
+            <button
+              onClick={toggleSelectAll}
+              className={`ml-auto flex items-center gap-1.5 text-xs ${
+                selectedIds.size === filtered.length
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              } transition-colors`}
+            >
+              {selectedIds.size === filtered.length ? (
+                <CheckSquare className="w-3.5 h-3.5" />
+              ) : (
+                <Square className="w-3.5 h-3.5" />
+              )}
+              {selectedIds.size === filtered.length ? "Deselect All" : "Select All"}
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filtered.map((p, index) => {

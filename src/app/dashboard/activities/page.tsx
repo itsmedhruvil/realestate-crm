@@ -130,7 +130,7 @@ export default function ActivitiesPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-card border border-border rounded-xl p-5">
+        <div key="activity-week" className="bg-card border border-border rounded-xl p-5">
           <h3 className="text-sm font-medium text-foreground mb-4">Activity This Week</h3>
           <ResponsiveContainer width="100%" height={140}>
             <LineChart data={weeklyData}>
@@ -151,7 +151,7 @@ export default function ActivitiesPage() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-5">
+        <div key="activity-type" className="bg-card border border-border rounded-xl p-5">
           <h3 className="text-sm font-medium text-foreground mb-4">Activity by Type</h3>
           <ResponsiveContainer width="100%" height={140}>
             <BarChart data={actTypeData} layout="vertical" barSize={14}>

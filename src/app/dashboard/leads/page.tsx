@@ -1,10 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { Plus, Phone, Mail, Filter, X } from "lucide-react";
+import { FormEvent, useState, useEffect, useRef } from "react";
+import { Plus, Phone, Mail, Filter, X, Search, ChevronDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { toast } from "sonner";
-import { useLeads } from "@/lib/hooks/useData";
+import { useLeads, useClients } from "@/lib/hooks/useData";
 
 const stageOrder = ["New", "Cold", "Warm", "Hot", "Negotiating", "Closed"];
 const stageColors: Record<string, string> = {
@@ -15,6 +15,8 @@ const stageColors: Record<string, string> = {
   Negotiating: "text-foreground bg-muted/70",
   Closed: "text-foreground bg-muted/50",
 };
+
+const urgencyOptions = ["Low", "Medium", "High", "Immediate", "This Month", "This Quarter"];
 
 const scoreColor = (n: number) =>
   n >= 80 ? { bg: "hsl(var(--grey-800))", color: "#ffffff" } : n >= 60 ? { bg: "hsl(var(--grey-700))", color: "#ffffff" } : { bg: "hsl(var(--grey-600))", color: "#ffffff" };
@@ -29,10 +31,30 @@ interface Lead {
   interest?: string;
   stage: string;
   score: number;
+  urgency?: string;
   agent?: string;
   source?: string;
   notes?: string;
   relatedClientId?: string;
+}
+
+function calculateScoreFromForm(data: any): number {
+  let score = 50;
+  if (data.urgency === "Immediate") score += 25;
+  else if (data.urgency === "This Month") score += 15;
+  else if (data.urgency === "This Quarter") score += 5;
+  if (data.budget) {
+    const cleaned = data.budget.replace(/,/g, "").replace(/₹/g, "").trim();
+    const numVal = parseFloat(cleaned) || 0;
+    if (/cr/i.test(cleaned) && numVal >= 2) score += 15;
+    else if (/cr/i.test(cleaned)) score += 10;
+    else if (numVal >= 5000000) score += 10;
+    else if (numVal >= 2000000) score += 5;
+  }
+  if (data.stage === "New") score += 5;
+  else if (data.stage === "Negotiating") score += 5;
+  else if (data.stage === "Closed") score = Math.min(score, 70);
+  return Math.min(Math.max(score, 0), 100);
 }
 
 export default function LeadsPage() {
@@ -47,26 +69,60 @@ export default function LeadsPage() {
     interest: "",
     stage: "New",
     score: 50,
+    urgency: "Medium",
     agent: "",
     source: "",
-    notes: ""
+    notes: "",
+    relatedClientId: "",
   });
+  const [clientSearch, setClientSearch] = useState("");
+  const [clientDropdownOpen, setClientDropdownOpen] = useState(false);
+  const [selectedClientName, setSelectedClientName] = useState("");
+  const clientDropdownRef = useRef<HTMLDivElement>(null);
 
   const { data: leads, isLoading: loading, mutate } = useLeads<Lead[]>();
+  const { data: clients = [] } = useClients<any[]>();
+
+  // Close client dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (clientDropdownRef.current && !clientDropdownRef.current.contains(e.target as Node)) {
+        setClientDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Recalculate score in real-time when urgency, budget, or stage changes
+  useEffect(() => {
+    const newScore = calculateScoreFromForm(formData);
+    setFormData(prev => ({ ...prev, score: newScore }));
+  }, [formData.urgency, formData.budget, formData.stage]);
+
+  const filteredClients = (clients || []).filter((c: any) => {
+    const q = clientSearch.toLowerCase();
+    return (
+      c.name?.toLowerCase().includes(q) ||
+      c.email?.toLowerCase().includes(q) ||
+      c.phone?.toLowerCase().includes(q)
+    );
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const submissionData = { ...formData, score: calculateScoreFromForm(formData) };
       const res = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submissionData),
       });
 
       const result = await res.json();
       if (!res.ok) throw new Error(result?.error || 'Failed to create lead');
 
-      toast.success('Lead added successfully!');
+      toast.success(`Lead added successfully! Score: ${result.calculatedScore || submissionData.score}`);
       setShowAddModal(false);
       setFormData({
         name: "",
@@ -76,10 +132,14 @@ export default function LeadsPage() {
         interest: "",
         stage: "New",
         score: 50,
+        urgency: "Medium",
         agent: "",
         source: "",
         notes: "",
+        relatedClientId: "",
       });
+      setSelectedClientName("");
+      setClientSearch("");
       mutate();
     } catch (error: any) {
       toast.error(error.message || 'Failed to add lead');
@@ -102,7 +162,6 @@ export default function LeadsPage() {
       console.error(error);
     }
   };
-
 
   const leadsByStageData = stageOrder.slice(0, 5).map((s) => ({
     stage: s,
@@ -165,7 +224,7 @@ export default function LeadsPage() {
                 <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground mb-2">New Lead</p>
                 <h2 className="text-2xl font-semibold text-foreground">Create a qualified lead profile</h2>
                 <p className="mt-2 text-sm text-muted-foreground max-w-xl">
-                  Capture the client details, source, budget, and status in one place. This form is built for sales ops and keeps the lead record complete.
+                  Capture the client details, source, budget, and urgency. Score is auto-calculated based on urgency, budget, and stage.
                 </p>
               </div>
               <button onClick={() => setShowAddModal(false)} className="text-muted-foreground hover:text-foreground text-2xl leading-none">×</button>
@@ -218,7 +277,7 @@ export default function LeadsPage() {
                 </label>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                 <label className="space-y-2">
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Interest</span>
                   <input
@@ -241,19 +300,24 @@ export default function LeadsPage() {
                   </select>
                 </label>
                 <label className="space-y-2">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Lead Score</span>
-                  <input
-                    value={formData.score}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, score: Number(e.target.value) }))}
-                    type="range"
-                    min={0}
-                    max={100}
-                    className="w-full"
-                  />
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>0</span>
-                    <span>{formData.score}</span>
-                    <span>100</span>
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Urgency</span>
+                  <select
+                    value={formData.urgency}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, urgency: e.target.value }))}
+                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-foreground"
+                  >
+                    {urgencyOptions.map((u) => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Lead Score (auto)</span>
+                  <div className="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-foreground flex items-center justify-between">
+                    <span className="font-semibold">{formData.score}/100</span>
+                    <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${formData.score}%`, background: "hsl(var(--foreground))" }} />
+                    </div>
                   </div>
                 </label>
               </div>
@@ -279,6 +343,85 @@ export default function LeadsPage() {
                 </label>
               </div>
 
+              {/* Searchable Client Dropdown */}
+              <div className="space-y-2" ref={clientDropdownRef}>
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Link to Client</span>
+                <div className="relative">
+                  <div
+                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground flex items-center justify-between cursor-pointer outline-none transition-colors focus:border-foreground"
+                    onClick={() => setClientDropdownOpen(!clientDropdownOpen)}
+                  >
+                    <span className={selectedClientName ? "text-foreground" : "text-muted-foreground"}>
+                      {selectedClientName || "Search and select existing client..."}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${clientDropdownOpen ? "rotate-180" : ""}`} />
+                  </div>
+                  {clientDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1 z-50 rounded-xl border border-border bg-card shadow-lg overflow-hidden">
+                      <div className="p-2 border-b border-border">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                          <input
+                            autoFocus
+                            value={clientSearch}
+                            onChange={(e) => setClientSearch(e.target.value)}
+                            placeholder="Search clients..."
+                            className="w-full pl-8 pr-3 py-2 text-xs bg-muted rounded-lg border-0 outline-none focus:ring-1 focus:ring-foreground/20 text-foreground placeholder:text-muted-foreground"
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredClients.length > 0 ? (
+                          filteredClients.map((client: any) => (
+                            <button
+                              key={client._id || client.id}
+                              type="button"
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, relatedClientId: client._id?.toString() || client.id }));
+                                setSelectedClientName(client.name);
+                                setClientDropdownOpen(false);
+                                setClientSearch("");
+                              }}
+                              className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3"
+                            >
+                              <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-foreground shrink-0">
+                                {client.name?.split(" ").map((w: string) => w[0]).join("").slice(0, 2)}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">{client.name}</p>
+                                <p className="text-xs text-muted-foreground truncate">{client.email}</p>
+                              </div>
+                              {formData.relatedClientId === (client._id?.toString() || client.id) && (
+                                <span className="ml-auto text-xs text-foreground font-medium">Selected</span>
+                              )}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-xs text-muted-foreground text-center">
+                            {clientSearch ? "No matching clients found" : "No clients available"}
+                          </div>
+                        )}
+                      </div>
+                      {selectedClientName && (
+                        <div className="border-t border-border p-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, relatedClientId: "" }));
+                              setSelectedClientName("");
+                              setClientSearch("");
+                            }}
+                            className="w-full text-left px-3 py-2 text-xs text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            Clear selection
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <label className="space-y-2">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</span>
                 <textarea
@@ -295,7 +438,7 @@ export default function LeadsPage() {
                   Cancel
                 </button>
                 <button type="submit" className="w-full sm:w-auto px-4 py-3 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity">
-                  Add Lead
+                  Add Lead (Score: {formData.score})
                 </button>
               </div>
             </form>
@@ -310,7 +453,7 @@ export default function LeadsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  {["Client", "Interest", "Budget", "Stage", "Score", "Agent", "Source", "Date"].map((h) => (
+                  {["Client", "Interest", "Budget", "Urgency", "Stage", "Score", "Agent", "Source", "Date"].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -333,6 +476,16 @@ export default function LeadsPage() {
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{lead.interest}</td>
                       <td className="px-4 py-3 text-sm font-medium text-foreground">{lead.budget}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          lead.urgency === "Immediate" ? "bg-red-100 text-red-700" :
+                          lead.urgency === "This Month" ? "bg-orange-100 text-orange-700" :
+                          lead.urgency === "High" ? "bg-amber-100 text-amber-700" :
+                          lead.urgency === "This Quarter" ? "bg-blue-100 text-blue-700" :
+                          lead.urgency === "Low" ? "bg-slate-100 text-slate-600" :
+                          "bg-muted text-muted-foreground"
+                        }`}>{lead.urgency || "Medium"}</span>
+                      </td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${stageColors[lead.stage]}`}>{lead.stage}</span>
                       </td>
@@ -378,6 +531,17 @@ export default function LeadsPage() {
                           <span className="text-xs font-medium text-foreground">{l.budget}</span>
                           <span className="text-xs text-muted-foreground">{l.agent}</span>
                         </div>
+                        {l.urgency && (
+                          <div className="mt-1.5">
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                              l.urgency === "Immediate" ? "bg-red-100 text-red-700" :
+                              l.urgency === "This Month" ? "bg-orange-100 text-orange-700" :
+                              l.urgency === "High" ? "bg-amber-100 text-amber-700" :
+                              l.urgency === "This Quarter" ? "bg-blue-100 text-blue-700" :
+                              "bg-muted text-muted-foreground"
+                            }`}>{l.urgency}</span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -405,7 +569,17 @@ export default function LeadsPage() {
                 <p className="text-lg font-medium text-foreground">{selected.name}</p>
                 <p className="text-sm text-muted-foreground">{selected.email}</p>
               </div>
-              <span className={`ml-auto text-xs px-2 py-1 rounded-full font-medium ${stageColors[selected.stage]}`}>{selected.stage}</span>
+              <div className="ml-auto flex flex-col items-end gap-1">
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${stageColors[selected.stage]}`}>{selected.stage}</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                  selected.urgency === "Immediate" ? "bg-red-100 text-red-700" :
+                  selected.urgency === "This Month" ? "bg-orange-100 text-orange-700" :
+                  selected.urgency === "High" ? "bg-amber-100 text-amber-700" :
+                  selected.urgency === "This Quarter" ? "bg-blue-100 text-blue-700" :
+                  selected.urgency === "Low" ? "bg-slate-100 text-slate-600" :
+                  "bg-muted text-muted-foreground"
+                }`}>{selected.urgency || "Medium"}</span>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3 mb-4">
               {[["Budget", selected.budget], ["Interest", selected.interest], ["Agent", selected.agent], ["Source", selected.source]].map(([k, v]) => (

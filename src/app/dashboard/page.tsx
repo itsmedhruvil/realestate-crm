@@ -105,8 +105,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return (
       <div className="bg-background border border-border rounded-lg p-3 text-xs">
         <p className="text-muted-foreground mb-1">{label}</p>
-        {payload.map((p: any, i: number) => (
-          <p key={i} style={{ color: p.color }} className="font-medium">
+        {payload.map((p: any) => (
+          <p key={p.name} style={{ color: p.color }} className="font-medium">
             {p.name}: ₹{p.value}L
           </p>
         ))}
@@ -139,10 +139,22 @@ export default function DashboardPage() {
         const visitsJson = await visitsRes.json();
         const paymentsJson = await paymentsRes.json();
 
-        setLeads(leadsJson.data || []);
-        setProperties(propertiesJson.data || []);
-        setVisits(visitsJson.data || []);
-        setPayments(paymentsJson.data || []);
+        setLeads((leadsJson.data || []).map((lead: any) => ({
+          ...lead,
+          id: lead.id || lead._id?.toString() || "",
+        })));
+        setProperties((propertiesJson.data || []).map((property: any) => ({
+          ...property,
+          id: property.id || property._id?.toString() || "",
+        })));
+        setVisits((visitsJson.data || []).map((visit: any) => ({
+          ...visit,
+          id: visit.id || visit._id?.toString() || "",
+        })));
+        setPayments((paymentsJson.data || []).map((payment: any) => ({
+          ...payment,
+          id: payment.id || payment._id?.toString() || "",
+        })));
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
         toast.error("Could not load dashboard data.");
@@ -278,7 +290,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
+        <div key="revenue-pipeline" className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="text-sm font-medium text-foreground">Revenue Pipeline</h3>
@@ -304,7 +316,7 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-5">
+        <div key="deals-by-type" className="bg-card border border-border rounded-xl p-5">
           <div className="mb-5">
             <h3 className="text-sm font-medium text-foreground">Deals by Type</h3>
             <p className="text-xs text-muted-foreground mt-0.5">FY 2025–26</p>
@@ -312,8 +324,8 @@ export default function DashboardPage() {
           <ResponsiveContainer width="100%" height={140}>
             <PieChart>
               <Pie data={dealTypeData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={3} dataKey="value">
-                {dealTypeData.map((entry, index) => (
-                  <Cell key={index} fill={entry.color} />
+                {dealTypeData.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
             </PieChart>
@@ -331,7 +343,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div key="recent-leads" className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <h3 className="text-sm font-medium text-foreground">Recent Leads</h3>
             <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
@@ -366,7 +378,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div key="upcoming-visits" className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <h3 className="text-sm font-medium text-foreground">Upcoming Visits</h3>
             <span className="text-xs text-muted-foreground">{new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>

@@ -11,6 +11,7 @@ export interface ILead {
   interest?: string;
   stage?: string;
   score?: number;
+  urgency?: string;
   agent?: string;
   source?: string;
   notes?: string;
@@ -26,6 +27,7 @@ const LeadSchema = new Schema<ILead>(
     interest: String,
     stage: { type: String, default: "New" },
     score: { type: Number, default: 50 },
+    urgency: { type: String, default: "Medium" },
     agent: String,
     source: String,
     notes: String,
