@@ -166,7 +166,7 @@ export default function AddTeamMemberModal({ isOpen, onClose, onSave, member }: 
             </div>
             {!member && (
               <p className="text-xs leading-5 text-muted-foreground">
-                A Supabase password setup invite will be sent to this email.
+                An email invite will be sent to this email address.
               </p>
             )}
           </div>

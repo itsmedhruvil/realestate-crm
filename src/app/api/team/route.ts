@@ -36,9 +36,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Name and email are required." }, { status: 400 });
     }
 
-    // Look up the Clerk user by email so we can update their role metadata
+    // Send Clerk email invitation
     const { clerkClient } = await import("@clerk/nextjs/server");
     const clerk = await clerkClient();
+    
+    try {
+      await clerk.invitations.createInvitation({
+        emailAddress: email,
+        publicMetadata: { role },
+        redirectUrl: `${req.nextUrl.origin}/signin`,
+      });
+    } catch (inviteError) {
+      console.error("Failed to send Clerk invitation (user may already exist):", inviteError);
+    }
+
+    // If the user already exists in Clerk, update their metadata directly
     const clerkUsers = await clerk.users.getUserList({ emailAddress: [email] });
     if (clerkUsers.totalCount > 0) {
       const clerkUser = clerkUsers.data[0];
