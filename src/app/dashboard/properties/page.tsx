@@ -1,11 +1,34 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2, Bed, Maximize2, MapPin, Plus, Search, Eye, Edit2, Upload, X, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Building2,
+  Bed,
+  Maximize2,
+  MapPin,
+  Plus,
+  Search,
+  Eye,
+  Edit2,
+  Upload,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  ExternalLink,
+  CheckSquare,
+  Square,
+  Trash2,
+  Tags,
+  Check,
+  Loader2,
+} from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { CldUploadButton } from 'next-cloudinary';
 import { toast } from "sonner";
 import { useProperties, useTeam, useLeads, useClients } from "@/lib/hooks/useData";
+import { useUser } from "@clerk/nextjs";
+import { isAdminRole, normalizeRole } from "@/lib/auth/roles";
 
 interface Property {
   id: string;
@@ -46,6 +69,14 @@ function parsePriceValue(price?: string) {
 }
 
 export default function PropertiesPage() {
+  const { user, isLoaded: userLoaded } = useUser();
+  const accountRole = useMemo(() => {
+    if (!user) return "Sales Agent";
+    return normalizeRole(user.unsafeMetadata?.role);
+  }, [user]);
+
+  const isAdmin = useMemo(() => isAdminRole(accountRole), [accountRole]);
+
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -66,21 +97,135 @@ export default function PropertiesPage() {
   const [editMode, setEditMode] = useState(false);
   const [viewProperty, setViewProperty] = useState<Property | null>(null);
 
-  const { data: properties = [], isLoading: loading, mutate } = useProperties<Property[]>();
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<"status" | "delete" | null>(null);
+  const [bulkStatusValue, setBulkStatusValue] = useState("available");
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+
+  const { data: rawProperties = [], isLoading: loading, mutate } = useProperties<any[]>();
+  
+  // Normalize MongoDB _id to id for consistent usage
+  const properties = useMemo(
+    () => (rawProperties || []).map((p: any) => ({
+      id: p._id?.toString() || p.id || "",
+      name: p.name,
+      location: p.location,
+      price: p.price,
+      type: p.type,
+      status: p.status || "available",
+      beds: p.beds,
+      baths: p.baths,
+      sqft: p.sqft,
+      agent: p.agent,
+      client: p.client,
+      images: p.images || [],
+    })),
+    [rawProperties]
+  );
   const { data: team = [] } = useTeam<any[]>();
   const { data: leads = [] } = useLeads<any[]>();
   const { data: clients = [] } = useClients<any[]>();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
+  // Clear selection when data changes
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [rawProperties]);
+
   useEffect(() => {
     setActiveImageIndex(0);
   }, [viewProperty]);
+
+  // Toggle single selection
+  const toggleSelect = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  // Select all / deselect all
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(p => p.id)));
+    }
+  };
+
+  // Execute bulk action
+  const executeBulkAction = async () => {
+    if (selectedIds.size === 0) {
+      toast.error("No properties selected");
+      return;
+    }
+
+    try {
+      setBulkProcessing(true);
+
+      if (bulkAction === "delete") {
+        if (!confirm(`Delete ${selectedIds.size} properties? This action cannot be undone.`)) {
+          setBulkProcessing(false);
+          return;
+        }
+      }
+
+      const res = await fetch("/api/properties", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ids: Array.from(selectedIds),
+          operation: bulkAction,
+          value: bulkAction === "status" ? bulkStatusValue : undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Bulk operation failed");
+      }
+
+      toast.success(await res.json().then(d => d.message));
+      setSelectedIds(new Set());
+      setBulkAction(null);
+      mutate();
+    } catch (error: any) {
+      toast.error(error.message || "Bulk operation failed");
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
+  };
+
+  const handleCopyShareLink = (propertyId: string) => {
+    if (!propertyId) {
+      toast.error("Cannot generate share link: missing property ID");
+      return;
+    }
+    const url = `${window.location.origin}/listings/${propertyId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      toast.success("Share link copied to clipboard!");
+    }).catch(() => {
+      toast.error("Failed to copy link");
+    });
+  };
+
+  const handleOpenPublicPreview = (propertyId: string) => {
+    if (!propertyId) return;
+    window.open(`/listings/${propertyId}`, '_blank');
   };
 
   const handleSaveProperty = async () => {
@@ -107,7 +252,6 @@ export default function PropertiesPage() {
 
       let res;
       if (editMode && formData.id) {
-        // Update existing property
         res = await fetch("/api/properties", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -117,7 +261,6 @@ export default function PropertiesPage() {
           })
         });
       } else {
-        // Create new property
         res = await fetch("/api/properties", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -176,6 +319,10 @@ export default function PropertiesPage() {
   };
 
   const handleDeleteProperty = async (id: string) => {
+    if (!id) {
+      toast.error("Invalid property ID");
+      return;
+    }
     if (!confirm("Are you sure you want to delete this property?")) return;
 
     try {
@@ -295,51 +442,142 @@ export default function PropertiesPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filtered.map((p) => (
-          <div key={p.id} className="bg-card border border-border rounded-xl overflow-hidden hover:border-foreground/50 transition-colors cursor-pointer group">
-            <div className="h-40 relative border-b border-border overflow-hidden">
-              {p.images && p.images.length > 0 ? (
-                <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
+      {/* Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3 animate-in slide-in-from-top-2">
+          <span className="text-sm font-medium text-foreground">
+            {selectedIds.size} selected
+          </span>
+          <div className="flex items-center gap-2 ml-auto">
+            <select
+              value={bulkStatusValue}
+              onChange={(e) => setBulkStatusValue(e.target.value)}
+              className="bg-muted border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none"
+            >
+              <option value="available">Available</option>
+              <option value="reserved">Reserved</option>
+              <option value="sold">Sold</option>
+            </select>
+            <button
+              onClick={() => { setBulkAction("status"); executeBulkAction(); }}
+              disabled={bulkProcessing}
+              className="flex items-center gap-1.5 bg-foreground text-background px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {bulkProcessing && bulkAction === "status" ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center">
-                  <Building2 className="w-12 h-12 text-foreground/20" />
-                </div>
+                <Tags className="w-3 h-3" />
               )}
-              <div className="absolute top-3 left-3">
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusConfig[p.status]?.className || "text-muted-foreground bg-muted"}`}>
-                  {statusConfig[p.status]?.label || p.status}
-                </span>
-              </div>
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                <button 
-                  onClick={(e) => { e.stopPropagation(); handleViewProperty(p); }}
-                  className="w-7 h-7 bg-foreground/70 rounded-md flex items-center justify-center hover:bg-foreground transition-colors"
-                >
-                  <Eye className="w-3 h-3 text-background" />
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); handleEditProperty(p); }}
-                  className="w-7 h-7 bg-foreground/70 rounded-md flex items-center justify-center hover:bg-foreground transition-colors"
-                >
-                  <Edit2 className="w-3 h-3 text-background" />
-                </button>
-            </div>
-            </div>
-            <div className="p-4">
-              <p className="text-lg font-semibold text-foreground tracking-tight">{p.price || "-"}</p>
-              <p className="text-sm font-medium text-foreground/80 mt-0.5">{p.name}</p>
-              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                <MapPin className="w-3 h-3" /> {p.location || "Unknown location"}
-              </p>
-              <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Bed className="w-3 h-3" />{p.beds ?? "-"} Beds</span>
-                <span className="flex items-center gap-1"><Maximize2 className="w-3 h-3" />{p.sqft?.toLocaleString() ?? "-"} sqft</span>
-                <span className="ml-auto">{p.agent || "-"}</span>
-              </div>
-            </div>
+              Update Status
+            </button>
+            <button
+              onClick={() => { setBulkAction("delete"); executeBulkAction(); }}
+              disabled={bulkProcessing}
+              className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {bulkProcessing && bulkAction === "delete" ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Trash2 className="w-3 h-3" />
+              )}
+              Delete Selected
+            </button>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              disabled={bulkProcessing}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2"
+            >
+              Cancel
+            </button>
           </div>
-        ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {filtered.map((p, index) => {
+          const isSelected = selectedIds.has(p.id);
+          return (
+            <div
+              key={p.id || index}
+              className={`bg-card border rounded-xl overflow-hidden transition-colors cursor-pointer group relative ${
+                isSelected ? "border-foreground" : "border-border hover:border-foreground/50"
+              }`}
+              onClick={() => handleViewProperty(p)}
+            >
+              {/* Selection checkbox */}
+              <div
+                className="absolute top-3 right-3 z-10"
+                onClick={(e) => toggleSelect(p.id, e)}
+              >
+                {isSelected ? (
+                  <CheckSquare className="w-5 h-5 text-foreground" />
+                ) : (
+                  <Square className="w-5 h-5 text-white/70 hover:text-white transition-colors" />
+                )}
+              </div>
+
+              <div className="h-40 relative border-b border-border overflow-hidden">
+                {p.images && p.images.length > 0 ? (
+                  <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center">
+                    <Building2 className="w-12 h-12 text-foreground/20" />
+                  </div>
+                )}
+                <div className="absolute top-3 left-3">
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusConfig[p.status]?.className || "text-muted-foreground bg-muted"}`}>
+                    {statusConfig[p.status]?.label || p.status}
+                  </span>
+                </div>
+              </div>
+              <div className="p-4">
+                <p className="text-lg font-semibold text-foreground tracking-tight">{p.price || "-"}</p>
+                <p className="text-sm font-medium text-foreground/80 mt-0.5">{p.name}</p>
+                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                  <MapPin className="w-3 h-3" /> {p.location || "Unknown location"}
+                </p>
+                <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1"><Bed className="w-3 h-3" />{p.beds ?? "-"} Beds</span>
+                  <span className="flex items-center gap-1"><Maximize2 className="w-3 h-3" />{p.sqft?.toLocaleString() ?? "-"} sqft</span>
+                  <span className="ml-auto">{p.agent || "-"}</span>
+                </div>
+                {/* Action buttons (always visible) */}
+                <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-border">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleViewProperty(p); }}
+                    className="flex-1 flex items-center justify-center gap-1 bg-muted py-1.5 rounded-md text-xs font-medium text-foreground hover:bg-muted/80 transition-colors"
+                    title="View details"
+                  >
+                    <Eye className="w-3 h-3" /> View
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleOpenPublicPreview(p.id); }}
+                    className="flex-1 flex items-center justify-center gap-1 bg-muted py-1.5 rounded-md text-xs font-medium text-foreground hover:bg-muted/80 transition-colors"
+                    title="Open public listing"
+                  >
+                    <ExternalLink className="w-3 h-3" /> Preview
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleCopyShareLink(p.id); }}
+                    className="flex-1 flex items-center justify-center gap-1 bg-muted py-1.5 rounded-md text-xs font-medium text-foreground hover:bg-muted/80 transition-colors"
+                    title="Copy share link"
+                  >
+                    <Copy className="w-3 h-3" /> Share
+                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleEditProperty(p); }}
+                      className="flex items-center justify-center w-8 h-8 bg-muted rounded-md text-foreground hover:bg-muted/80 transition-colors"
+                      title="Edit"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
         {filtered.length === 0 && (
           <div className="col-span-full text-center py-16 text-muted-foreground text-sm">
             No properties found
@@ -567,11 +805,25 @@ export default function PropertiesPage() {
                   Edit Property
                 </button>
                 <button 
-                  onClick={() => handleDeleteProperty(viewProperty.id)}
-                  className="flex-1 bg-red-600 text-background py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                  onClick={() => { handleOpenPublicPreview(viewProperty.id); }}
+                  className="flex-1 bg-foreground text-background py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
                 >
-                  Delete Property
+                  <ExternalLink className="w-4 h-4 inline mr-1" /> Preview
                 </button>
+                <button 
+                  onClick={() => handleCopyShareLink(viewProperty.id)}
+                  className="flex-1 bg-foreground text-background py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  <Copy className="w-4 h-4 inline mr-1" /> Share
+                </button>
+                {isAdmin && (
+                  <button 
+                    onClick={() => handleDeleteProperty(viewProperty.id)}
+                    className="flex-1 bg-red-600 text-background py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                  >
+                    Delete
+                  </button>
+                )}
                 <button 
                   onClick={() => setViewProperty(null)}
                   className="flex-1 bg-muted text-foreground py-2 rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors"

@@ -1,13 +1,36 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const protectedPaths = ["/dashboard", "/api"];
+const protectedPaths = ["/dashboard"];
 const authPaths = ["/signin", "/register"];
+
+// API routes that should be publicly accessible
+const publicApis = ["/api/inquiries", "/api/properties"];
+
+// Public pages accessible without authentication
+const publicPages = ["/listings", "/contact"];
 
 export default clerkMiddleware(async (auth, req) => {
   try {
     const { userId } = await auth();
     const { pathname } = req.nextUrl;
+
+    // Allow public API routes without auth
+    const isPublicApi = publicApis.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+    if (isPublicApi) {
+      return NextResponse.next();
+    }
+
+    // Allow public pages without auth
+    const isPublicPage = publicPages.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+    if (isPublicPage) {
+      return NextResponse.next();
+    }
+
+    // Allow root path without auth (redirects handled client-side)
+    if (pathname === "/") {
+      return NextResponse.next();
+    }
 
     const isProtected = protectedPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
     const isAuth = authPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));

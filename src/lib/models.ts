@@ -14,6 +14,7 @@ export interface ILead {
   agent?: string;
   source?: string;
   notes?: string;
+  relatedClientId?: string;
 }
 
 const LeadSchema = new Schema<ILead>(
@@ -28,6 +29,7 @@ const LeadSchema = new Schema<ILead>(
     agent: String,
     source: String,
     notes: String,
+    relatedClientId: { type: String, index: true },
   },
   { timestamps: true }
 );
@@ -175,6 +177,7 @@ export interface IClient {
   status?: string;
   assignedAgent?: string;
   notes?: string;
+  relatedLeadId?: string;
 }
 
 const ClientSchema = new Schema<IClient>(
@@ -187,6 +190,7 @@ const ClientSchema = new Schema<IClient>(
     status: { type: String, default: "Active" },
     assignedAgent: String,
     notes: String,
+    relatedLeadId: { type: String, index: true },
   },
   { timestamps: true }
 );

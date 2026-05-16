@@ -27,6 +27,7 @@ export async function POST(request: Request) {
       status: body.status || "Active",
       assignedAgent: body.assignedAgent,
       notes: body.notes,
+      relatedLeadId: body.relatedLeadId,
     });
 
     return NextResponse.json(newClient, { status: 201 });
@@ -55,6 +56,7 @@ export async function PUT(request: Request) {
         status: body.status,
         assignedAgent: body.assignedAgent,
         notes: body.notes,
+        relatedLeadId: body.relatedLeadId,
       },
       { new: true }
     );

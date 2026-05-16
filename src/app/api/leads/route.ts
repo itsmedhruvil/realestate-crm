@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
       agent: body.agent,
       source: body.source,
       notes: body.notes,
+      relatedClientId: body.relatedClientId,
     });
 
     return NextResponse.json({ data: newLead }, { status: 201 });
@@ -58,6 +59,7 @@ export async function PUT(req: NextRequest) {
       agent: body.agent,
       source: body.source,
       notes: body.notes,
+      relatedClientId: body.relatedClientId,
     });
 
     return NextResponse.json({ message: "Lead updated successfully" });

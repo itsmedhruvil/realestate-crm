@@ -7,7 +7,16 @@ export async function GET(req: NextRequest) {
   try {
     await connectDB();
     const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
     const status = searchParams.get('status');
+
+    if (id) {
+      const property = await Property.findById(id);
+      if (!property) {
+        return NextResponse.json({ error: "Property not found" }, { status: 404 });
+      }
+      return NextResponse.json({ data: property });
+    }
 
     const filter = status ? { status } : {};
     const properties = await Property.find(filter).sort({ createdAt: -1 });
@@ -82,6 +91,47 @@ export async function PUT(req: NextRequest) {
   } catch (error) {
     console.error('Error updating property:', error);
     return NextResponse.json({ error: "Failed to update property" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    await connectDB();
+    const body = await req.json();
+    const { ids, operation, value } = body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: "Property IDs required" }, { status: 400 });
+    }
+
+    if (operation === "status") {
+      if (!value || !["available", "reserved", "sold"].includes(value)) {
+        return NextResponse.json({ error: "Valid status value required (available, reserved, sold)" }, { status: 400 });
+      }
+      await Property.updateMany(
+        { _id: { $in: ids } },
+        { $set: { status: value } }
+      );
+      await logActivity({
+        type: 'property_updated',
+        text: `Bulk status update: ${ids.length} properties set to ${value}`,
+      });
+      return NextResponse.json({ message: `${ids.length} properties updated to ${value}` });
+    }
+
+    if (operation === "delete") {
+      await Property.deleteMany({ _id: { $in: ids } });
+      await logActivity({
+        type: 'property_updated',
+        text: `Bulk delete: ${ids.length} properties removed`,
+      });
+      return NextResponse.json({ message: `${ids.length} properties deleted` });
+    }
+
+    return NextResponse.json({ error: "Invalid operation" }, { status: 400 });
+  } catch (error) {
+    console.error('Error in bulk property operation:', error);
+    return NextResponse.json({ error: "Failed to process bulk operation" }, { status: 500 });
   }
 }
 

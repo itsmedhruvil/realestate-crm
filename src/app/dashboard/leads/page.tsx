@@ -32,6 +32,7 @@ interface Lead {
   agent?: string;
   source?: string;
   notes?: string;
+  relatedClientId?: string;
 }
 
 export default function LeadsPage() {
@@ -410,10 +411,23 @@ export default function LeadsPage() {
               {[["Budget", selected.budget], ["Interest", selected.interest], ["Agent", selected.agent], ["Source", selected.source]].map(([k, v]) => (
                 <div key={k} className="bg-muted rounded-lg p-3">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{k}</p>
-                  <p className="text-sm font-medium text-foreground">{v}</p>
+                  <p className="text-sm font-medium text-foreground">{v || "-"}</p>
                 </div>
               ))}
             </div>
+            {selected.relatedClientId && (
+              <div className="mb-4">
+                <div className="bg-muted rounded-lg p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Linked Client</p>
+                  <a
+                    href={`/dashboard/clients`}
+                    className="text-sm font-medium text-foreground underline underline-offset-2 hover:opacity-80 transition-opacity"
+                  >
+                    View Client Profile →
+                  </a>
+                </div>
+              </div>
+            )}
             <div className="mb-5">
               <div className="flex items-center justify-between text-xs mb-2">
                 <span className="text-muted-foreground">Lead Score</span>
