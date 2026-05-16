@@ -15,15 +15,15 @@ export default clerkMiddleware(async (auth, req) => {
     if (isProtected && !userId) {
       const signInUrl = new URL("/signin", req.url);
       signInUrl.searchParams.set("next", pathname);
-      return Response.redirect(signInUrl);
+      return NextResponse.redirect(signInUrl);
     }
 
     if (isAuth && userId) {
-      return Response.redirect(new URL("/dashboard", req.url));
+      return NextResponse.redirect(new URL("/dashboard", req.url));
     }
   } catch (error) {
     console.error("Middleware error:", error);
-    // Allow request to proceed if auth check fails to avoid blocking the app
+    // Allow request to proceed if auth check fails to avoid blocking the app entirely
     return NextResponse.next();
   }
 });
