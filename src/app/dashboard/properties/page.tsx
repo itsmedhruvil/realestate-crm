@@ -25,7 +25,6 @@ import {
   Globe,
   List,
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { CldUploadButton } from 'next-cloudinary';
 import { toast } from "sonner";
 import { useProperties, useTeam, useLeads, useClients } from "@/lib/hooks/useData";
@@ -53,27 +52,10 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   sold: { label: "Sold", className: "text-muted-foreground bg-muted" },
 };
 
-const priceBuckets = [
-  { range: "<50L", min: 0, max: 50 },
-  { range: "50-1Cr", min: 50, max: 100 },
-  { range: "1-2Cr", min: 100, max: 200 },
-  { range: "2-3Cr", min: 200, max: 300 },
-  { range: "3-5Cr", min: 300, max: 500 },
-  { range: "5Cr+", min: 500, max: Infinity },
-];
-
-function parsePriceValue(price?: string) {
-  if (!price) return 0;
-  const cleaned = price.replace(/,/g, "").replace(/₹/g, "").trim();
-  const value = parseFloat(cleaned) || 0;
-  if (/cr/i.test(cleaned)) return value * 100;
-  return value;
-}
-
 export default function PropertiesPage() {
   const { user, isLoaded: userLoaded } = useUser();
   const accountRole = useMemo(() => {
-    if (!user) return "Sales Agent";
+    if (!user) return "Sales";
     return normalizeRole(user.unsafeMetadata?.role);
   }, [user]);
 
@@ -133,7 +115,7 @@ export default function PropertiesPage() {
   // Clear selection when data changes
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [rawProperties]);
+  }, [rawProperties.length]);
 
   useEffect(() => {
     setActiveImageIndex(0);
@@ -359,65 +341,8 @@ export default function PropertiesPage() {
     [properties, filter, search]
   );
 
-  const stats = useMemo(
-    () => ({
-      total: properties.length,
-      available: properties.filter((p) => p.status === "available").length,
-      reserved: properties.filter((p) => p.status === "reserved").length,
-      sold: properties.filter((p) => p.status === "sold").length,
-    }),
-    [properties]
-  );
-
-  const priceRangeData = useMemo(
-    () =>
-      priceBuckets.map((bucket) => ({
-        range: bucket.range,
-        count: properties.filter((p) => {
-          const value = parsePriceValue(p.price);
-          return value >= bucket.min && value < bucket.max;
-        }).length,
-      })),
-    [properties]
-  );
-
   return (
     <div className="p-4 lg:p-6 space-y-5">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { label: "Total Listings", value: loading ? "..." : stats.total.toString() },
-          { label: "Available", value: loading ? "..." : stats.available.toString() },
-          { label: "Reserved", value: loading ? "..." : stats.reserved.toString() },
-          { label: "Sold (This FY)", value: loading ? "..." : stats.sold.toString() },
-        ].map((s) => (
-          <div key={s.label} className="bg-card border border-border rounded-xl p-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
-            <p className="text-2xl font-medium tracking-tight text-foreground">{s.value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="bg-card border border-border rounded-xl p-5">
-        <h3 className="text-sm font-medium text-foreground mb-4">Listings by Price Range</h3>
-        <ResponsiveContainer width="100%" height={120}>
-          <BarChart data={priceRangeData} barSize={28}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="range" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <Tooltip
-              contentStyle={{
-                background: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: 8,
-                fontSize: 12,
-                color: "hsl(var(--foreground))",
-              }}
-            />
-            <Bar dataKey="count" fill="hsl(var(--foreground))" fillOpacity={0.15} radius={[4, 4, 0, 0]} name="Properties" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
       {/* Top Bar - Search, Filters, Actions */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col sm:flex-row gap-3">
@@ -669,8 +594,8 @@ export default function PropertiesPage() {
                     className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-foreground"
                   />
                   <datalist id="client-list">
-                    {clients.map((client: any) => (
-                      <option key={client.id} value={client.name} />
+                    {clients.map((client: any, i: number) => (
+                      <option key={client.id || i} value={client.name} />
                     ))}
                   </datalist>
                 </div>

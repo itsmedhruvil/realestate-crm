@@ -37,7 +37,7 @@ export default function AccountPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState("Sales Agent");
+  const [role, setRole] = useState("Sales");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Record<string, boolean>>(defaultNotifications);
   const [loading, setLoading] = useState(true);
@@ -54,7 +54,7 @@ export default function AccountPage() {
     setName(user.fullName || "");
     setEmail(user.primaryEmailAddress?.emailAddress || "");
     setPhone(stringValue(metadata.phone));
-    setRole(stringValue(metadata.role) || "Sales Agent");
+    setRole(stringValue(metadata.role) || "Sales");
     setAvatarPreview(user.imageUrl || null);
     setNotifications({
       ...defaultNotifications,
@@ -225,9 +225,8 @@ export default function AccountPage() {
                 }}
                 className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
               >
-                <option>Administrator</option>
-                <option>Manager</option>
-                <option>Sales Agent</option>
+                <option>Office Admin</option>
+                <option>Sales</option>
               </select>
             </label>
           </div>

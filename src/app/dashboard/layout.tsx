@@ -24,6 +24,7 @@ import {
   TrendingUp,
   ShieldCheck,
   Mail,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUser, useClerk } from "@clerk/nextjs";
@@ -38,6 +39,7 @@ const navItems = [
   { href: "/dashboard/activities", label: "Activity", icon: Activity },
   { href: "/dashboard/site-visits", label: "Site Visits", icon: Calendar },
   { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
+  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
 type SearchRecord = {
@@ -130,7 +132,7 @@ export default function DashboardLayout({
       name,
       email: user.primaryEmailAddress?.emailAddress || "",
       phone: stringValue(metadata.phone),
-      role: stringValue(metadata.role) || "Sales Agent",
+      role: stringValue(metadata.role) || "Sales",
       avatar: user.imageUrl || null,
     };
   }, [user]);
@@ -432,77 +434,6 @@ export default function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="relative p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-muted border border-foreground rounded-full" />
-            </button>
-            <div ref={accountMenuRef} className="relative">
-              <button
-                onClick={() => setAccountOpen((open) => !open)}
-                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-foreground hover:bg-muted/80 transition-colors"
-                aria-label="Open account menu"
-                aria-expanded={accountOpen}
-              >
-                <AccountAvatar profile={accountProfile} className="h-full w-full rounded-full" textClassName="text-xs" />
-              </button>
-              {accountOpen && (
-                <div className="absolute right-0 top-11 w-72 rounded-xl border border-border bg-card shadow-lg z-50 overflow-hidden">
-                  <div className="p-4 border-b border-border">
-                    <div className="flex items-center gap-3">
-                      <AccountAvatar profile={accountProfile} className="w-10 h-10 rounded-full" textClassName="text-sm" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{accountProfile.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{accountProfile.email}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-2">
-                    <Link
-                      href="/dashboard/account"
-                      onClick={closeMenus}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                    >
-                      <User className="w-4 h-4" />
-                      My Account
-                    </Link>
-                    <Link
-                      href="/dashboard/account#security"
-                      onClick={closeMenus}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                    >
-                      <ShieldCheck className="w-4 h-4" />
-                      Security
-                    </Link>
-                    <Link
-                      href="/dashboard/account#notifications"
-                      onClick={closeMenus}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                    >
-                      <Mail className="w-4 h-4" />
-                      Notifications
-                    </Link>
-                    {isAdminRole(accountProfile.role) && (
-                      <Link
-                        href="/dashboard/settings"
-                        onClick={closeMenus}
-                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                      >
-                        <Settings className="w-4 h-4" />
-                        Settings
-                      </Link>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="mt-1 w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Logout
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </header>
 

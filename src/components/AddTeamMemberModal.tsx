@@ -31,7 +31,7 @@ export default function AddTeamMemberModal({ isOpen, onClose, onSave, member }: 
     revenue?: string;
   }>({
     name: "",
-    role: "Sales Agent",
+    role: "Sales",
     email: "",
     phone: "",
     revenue: "",
@@ -43,7 +43,7 @@ export default function AddTeamMemberModal({ isOpen, onClose, onSave, member }: 
     if (member) {
       setFormData({
         name: member.name,
-        role: member.role || "Sales Agent",
+        role: member.role || "Sales",
         email: member.email || "",
         phone: member.phone || "",
         revenue: member.revenue || "",
@@ -51,7 +51,7 @@ export default function AddTeamMemberModal({ isOpen, onClose, onSave, member }: 
     } else {
       setFormData({
         name: "",
-        role: "Sales Agent",
+        role: "Sales",
         email: "",
         phone: "",
         revenue: "",
@@ -82,7 +82,7 @@ export default function AddTeamMemberModal({ isOpen, onClose, onSave, member }: 
       await onSave(formData);
       setFormData({
         name: "",
-        role: "Sales Agent",
+        role: "Sales",
         email: "",
         phone: "",
         revenue: "",

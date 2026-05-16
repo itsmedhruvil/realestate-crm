@@ -1,11 +1,12 @@
-export const appRoles = ["Administrator", "Manager", "Sales Agent"] as const;
+export const appRoles = ["Office Admin", "Sales"] as const;
 
 export type AppRole = (typeof appRoles)[number];
 
 const roleAccess: Record<AppRole, string[]> = {
-  Administrator: [
+  "Office Admin": [
     "/dashboard",
     "/dashboard/properties",
+    "/dashboard/analytics",
     "/dashboard/leads",
     "/dashboard/clients",
     "/dashboard/team",
@@ -15,20 +16,10 @@ const roleAccess: Record<AppRole, string[]> = {
     "/dashboard/settings",
     "/dashboard/account",
   ],
-  Manager: [
+  Sales: [
     "/dashboard",
     "/dashboard/properties",
-    "/dashboard/leads",
-    "/dashboard/clients",
-    "/dashboard/team",
-    "/dashboard/activities",
-    "/dashboard/site-visits",
-    "/dashboard/payments",
-    "/dashboard/account",
-  ],
-  "Sales Agent": [
-    "/dashboard",
-    "/dashboard/properties",
+    "/dashboard/analytics",
     "/dashboard/leads",
     "/dashboard/clients",
     "/dashboard/activities",
@@ -38,11 +29,13 @@ const roleAccess: Record<AppRole, string[]> = {
 };
 
 export function normalizeRole(role: unknown): AppRole {
-  return appRoles.includes(role as AppRole) ? (role as AppRole) : "Sales Agent";
+  // Map legacy roles to new roles
+  if (role === "Administrator" || role === "Manager") return "Office Admin";
+  return appRoles.includes(role as AppRole) ? (role as AppRole) : "Sales";
 }
 
 export function isAdminRole(role: unknown) {
-  return normalizeRole(role) === "Administrator";
+  return normalizeRole(role) === "Office Admin";
 }
 
 export function canAccessPath(role: unknown, pathname: string) {

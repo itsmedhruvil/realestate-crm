@@ -34,7 +34,7 @@ export default function TeamPage() {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
   const { user } = useUser();
-  const isAdmin = isAdminRole(user?.unsafeMetadata?.role);
+  const isAdmin = useMemo(() => isAdminRole(user?.unsafeMetadata?.role), [user]);
 
   const { data: team = [], isLoading: loading, mutate } = useTeam<TeamMember[]>();
 
