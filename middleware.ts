@@ -10,7 +10,7 @@ export default clerkMiddleware(async (auth, req) => {
     const { pathname } = req.nextUrl;
 
     const isProtected = protectedPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-    const isAuth = authPaths.includes(pathname);
+    const isAuth = authPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
     if (isProtected && !userId) {
       const signInUrl = new URL("/signin", req.url);

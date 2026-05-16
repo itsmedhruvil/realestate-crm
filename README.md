@@ -21,7 +21,7 @@ A full-featured real estate CRM built with **Next.js 16**, **MongoDB + Mongoose*
 
 - **Framework**: Next.js 16 (App Router)
 - **Database**: MongoDB + Mongoose ODM
-- **Auth**: Clerk (email/password, Google OAuth, magic links)
+- **Auth**: Clerk (pre-built `<SignIn>` / `<SignUp>` components with email/password, Google OAuth, magic links)
 - **UI**: Tailwind CSS (dark-first, black/matt-grey palette)
 - **Charts**: Recharts (AreaChart, BarChart, LineChart, PieChart, RadarChart)
 - **Icons**: Lucide React
@@ -129,7 +129,6 @@ src/
 │   └── auth/
 │       └── roles.ts            # RBAC: Administrator, Manager, Sales Agent
 ├── components/
-│   ├── AuthForm.tsx            # Shared auth form component
 │   ├── AddClientModal.tsx
 │   └── AddTeamMemberModal.tsx
 └── hooks/
