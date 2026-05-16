@@ -387,6 +387,22 @@ export default function PropertiesPage() {
             <Globe className="w-4 h-4" /> Preview All
           </button>
 
+          {/* Share All Listings Link */}
+          <button
+            onClick={() => {
+              const url = `${window.location.origin}/listings`;
+              navigator.clipboard.writeText(url).then(() => {
+                toast.success("Listings link copied to clipboard!");
+              }).catch(() => {
+                toast.error("Failed to copy link");
+              });
+            }}
+            className="flex items-center gap-2 bg-card border border-border text-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
+            title="Copy public listings link"
+          >
+            <Copy className="w-4 h-4" /> Share All Link
+          </button>
+
           {/* Bulk Actions - only show when items selected */}
           {selectedIds.size > 0 && (
             <>

@@ -217,17 +217,10 @@ export default function AccountPage() {
             </label>
             <label className="space-y-2">
               <span className="text-xs font-medium text-muted-foreground">Role</span>
-              <select
-                value={role}
-                onChange={(event) => {
-                  setRole(event.target.value);
-                  setSaved(false);
-                }}
-                className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option>Office Admin</option>
-                <option>Sales</option>
-              </select>
+              <div className="w-full rounded-lg border border-border bg-muted px-4 py-3 text-sm text-foreground">
+                {role}
+              </div>
+              <p className="text-xs text-muted-foreground">Role can only be changed by an Admin via Clerk dashboard</p>
             </label>
           </div>
         </div>
