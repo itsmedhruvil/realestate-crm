@@ -2,11 +2,6 @@
 
 import { useMemo } from "react";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
-  LineChart, Line,
-} from "recharts";
-import {
   Building2, Users, UserCheck, CreditCard, Calendar, TrendingUp,
   DollarSign, Phone, Target, ArrowUpRight,
 } from "lucide-react";
@@ -92,6 +87,8 @@ export default function AnalyticsPage() {
     [properties]
   );
 
+  const maxPriceCount = useMemo(() => Math.max(...priceRangeData.map(d => d.count), 1), [priceRangeData]);
+
   // Property type distribution
   const propertyTypeData = useMemo(() => {
     const typeMap: Record<string, number> = {};
@@ -121,6 +118,9 @@ export default function AnalyticsPage() {
     return Object.entries(stageMap).map(([name, value]) => ({ name, value }));
   }, [leads]);
 
+  const maxLeadStageCount = useMemo(() => Math.max(...leadStageData.map(d => d.value), 1), [leadStageData]);
+  const totalLeadStage = useMemo(() => leadStageData.reduce((s, d) => s + d.value, 0), [leadStageData]);
+
   // Lead by source
   const leadSourceData = useMemo(() => {
     const sourceMap: Record<string, number> = {};
@@ -130,6 +130,9 @@ export default function AnalyticsPage() {
     });
     return Object.entries(sourceMap).map(([name, value]) => ({ name, value }));
   }, [leads]);
+
+  const maxLeadSourceCount = useMemo(() => Math.max(...leadSourceData.map(d => d.value), 1), [leadSourceData]);
+  const totalLeadSource = useMemo(() => leadSourceData.reduce((s, d) => s + d.value, 0), [leadSourceData]);
 
   // Client Stats
   const clientStats = useMemo(() => ({
@@ -189,6 +192,8 @@ export default function AnalyticsPage() {
     return Object.entries(statusMap).map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value }));
   }, [visits]);
 
+  const maxVisitCount = useMemo(() => Math.max(...visitStatusData.map(d => d.value), 1), [visitStatusData]);
+
   // Team performance
   const topPerformers = useMemo(() => {
     const agentPerformance: Record<string, { properties: number; leads: number; closed: number; revenue: number }> = {};
@@ -234,6 +239,8 @@ export default function AnalyticsPage() {
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
   }, [properties]);
+
+  const maxAgentPropCount = useMemo(() => Math.max(...agentPropertyData.map(d => d.count), 1), [agentPropertyData]);
 
   const keyMetrics = [
     { label: "Properties", value: propertyStats.total, icon: Building2, sub: `${propertyStats.available} available` },
@@ -315,69 +322,73 @@ export default function AnalyticsPage() {
         {/* Listings by Price Range */}
         <div className="bg-card border border-border rounded-xl p-5">
           <h3 className="text-sm font-medium text-foreground mb-4">Listings by Price Range</h3>
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={priceRangeData} barSize={24}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="range" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--foreground))" }} />
-              <Bar dataKey="count" fill="hsl(var(--foreground))" fillOpacity={0.15} radius={[4, 4, 0, 0]} name="Properties" />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="flex items-end gap-1.5 h-[160px]">
+            {priceRangeData.map((item) => (
+              <div key={item.range} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                <div
+                  className="w-full bg-foreground/15 rounded-t-sm transition-all"
+                  style={{ height: `${(item.count / maxPriceCount) * 100}%` }}
+                />
+                <span className="text-[9px] text-muted-foreground leading-none text-center">{item.range}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Leads by Stage */}
         <div className="bg-card border border-border rounded-xl p-5">
           <h3 className="text-sm font-medium text-foreground mb-4">Leads by Stage</h3>
           {leadStageData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie data={leadStageData} cx="50%" cy="50%" outerRadius={60} innerRadius={35} dataKey="value" paddingAngle={3}>
-                  {leadStageData.map((_, index) => (
-                    <Cell key={index} fill={COLORS[index % COLORS.length]} fillOpacity={0.7} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--foreground))" }} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="space-y-2">
+              {leadStageData.slice(0, 5).map((entry, i) => (
+                <div key={entry.name}>
+                  <div className="flex justify-between text-xs mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
+                      <span className="text-muted-foreground">{entry.name}</span>
+                    </div>
+                    <span className="text-foreground font-medium">{entry.value}</span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${(entry.value / Math.max(totalLeadStage, 1)) * 100}%`, background: COLORS[i % COLORS.length] }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="h-[160px] flex items-center justify-center text-xs text-muted-foreground">No leads data</div>
           )}
-          <div className="flex flex-wrap gap-2 mt-2">
-            {leadStageData.slice(0, 5).map((entry, i) => (
-              <span key={entry.name} className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <span className="w-2 h-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
-                {entry.name}: {entry.value}
-              </span>
-            ))}
-          </div>
         </div>
 
         {/* Leads by Source */}
         <div className="bg-card border border-border rounded-xl p-5">
           <h3 className="text-sm font-medium text-foreground mb-4">Leads by Source</h3>
           {leadSourceData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie data={leadSourceData} cx="50%" cy="50%" outerRadius={60} innerRadius={35} dataKey="value" paddingAngle={3}>
-                  {leadSourceData.map((_, index) => (
-                    <Cell key={index} fill={COLORS[index % COLORS.length]} fillOpacity={0.7} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--foreground))" }} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="space-y-2">
+              {leadSourceData.slice(0, 5).map((entry, i) => (
+                <div key={entry.name}>
+                  <div className="flex justify-between text-xs mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full" style={{ background: COLORS[(i + 2) % COLORS.length] }} />
+                      <span className="text-muted-foreground">{entry.name}</span>
+                    </div>
+                    <span className="text-foreground font-medium">{entry.value}</span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${(entry.value / Math.max(totalLeadSource, 1)) * 100}%`, background: COLORS[(i + 2) % COLORS.length] }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="h-[160px] flex items-center justify-center text-xs text-muted-foreground">No source data</div>
           )}
-          <div className="flex flex-wrap gap-2 mt-2">
-            {leadSourceData.slice(0, 5).map((entry, i) => (
-              <span key={entry.name} className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <span className="w-2 h-2 rounded-full" style={{ background: COLORS[(i + 2) % COLORS.length] }} />
-                {entry.name}: {entry.value}
-              </span>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -511,7 +522,7 @@ export default function AnalyticsPage() {
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-foreground/20 rounded-full"
-                      style={{ width: `${(agent.count / Math.max(...agentPropertyData.map(a => a.count), 1)) * 100}%` }}
+                      style={{ width: `${(agent.count / maxAgentPropCount) * 100}%` }}
                     />
                   </div>
                 </div>

@@ -2,7 +2,6 @@
 
 import { useMemo, useState, type ElementType, FormEvent } from "react";
 import { AlertCircle, Clock, CheckCircle2, Bell, Plus, Download, X, TrendingUp, DollarSign, CreditCard, ArrowUpRight } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { toast } from "sonner";
 import { usePayments, useClients } from "@/lib/hooks/useData";
 import { useUser } from "@clerk/nextjs";
@@ -284,6 +283,8 @@ export default function PaymentsPage() {
     }));
   }, [payments, spends]);
 
+  const maxChartValue = useMemo(() => Math.max(...chartData.map(d => Math.max(d.collected, d.target, d.spends)), 1), [chartData]);
+
   return (
     <div className="p-4 lg:p-6 space-y-5">
       {/* Tab Switcher */}
@@ -340,24 +341,30 @@ export default function PaymentsPage() {
               <h3 className="text-sm font-medium text-foreground">Collection vs Target</h3>
               <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md">in Lakhs ₹</span>
             </div>
-            <ResponsiveContainer width="100%" height={140}>
-              <BarChart data={chartData} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--background))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 12,
-                    color: "hsl(var(--foreground))",
-                  }}
-                />
-                <Bar dataKey="target" fill="hsl(var(--foreground))" fillOpacity={0.08} radius={[3, 3, 0, 0]} name="Target" />
-                <Bar dataKey="collected" fill="hsl(var(--foreground))" fillOpacity={0.5} radius={[3, 3, 0, 0]} name="Collected" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="space-y-2.5">
+              {chartData.map((item) => (
+                <div key={item.month}>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-muted-foreground">{item.month}</span>
+                    <span className="text-foreground font-medium">₹{item.collected}L / ₹{item.target}L</span>
+                  </div>
+                  <div className="flex gap-1.5 h-2">
+                    <div className="flex-1 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-foreground/20 rounded-full transition-all"
+                        style={{ width: `${(item.target / maxChartValue) * 100}%` }}
+                      />
+                    </div>
+                    <div className="flex-1 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-foreground/60 rounded-full transition-all"
+                        style={{ width: `${(item.collected / maxChartValue) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="bg-card border border-border rounded-xl overflow-hidden">
@@ -483,30 +490,36 @@ export default function PaymentsPage() {
             ))}
           </div>
 
-          {/* Spends Chart */}
+          {/* Revenue vs Spends Chart */}
           <div className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium text-foreground">Revenue vs Spends</h3>
               <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md">in Lakhs ₹</span>
             </div>
-            <ResponsiveContainer width="100%" height={140}>
-              <BarChart data={chartData} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--background))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 12,
-                    color: "hsl(var(--foreground))",
-                  }}
-                />
-                <Bar dataKey="collected" fill="hsl(var(--foreground))" fillOpacity={0.5} radius={[3, 3, 0, 0]} name="Collected" />
-                <Bar dataKey="spends" fill="hsl(0, 72%, 51%)" fillOpacity={0.3} radius={[3, 3, 0, 0]} name="Spends" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="space-y-2.5">
+              {chartData.map((item) => (
+                <div key={item.month}>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-muted-foreground">{item.month}</span>
+                    <span className="text-foreground font-medium">₹{item.collected}L / ₹{item.spends}L</span>
+                  </div>
+                  <div className="flex gap-1.5 h-2">
+                    <div className="flex-1 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-foreground/60 rounded-full transition-all"
+                        style={{ width: `${(item.collected / maxChartValue) * 100}%` }}
+                      />
+                    </div>
+                    <div className="flex-1 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-red-500/40 rounded-full transition-all"
+                        style={{ width: `${(item.spends / maxChartValue) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Spend Categories */}

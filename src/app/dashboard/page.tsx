@@ -12,18 +12,6 @@ import {
   ChevronRight,
   AlertCircle,
 } from "lucide-react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
 import { toast } from "sonner";
 
 interface Lead {
@@ -99,22 +87,6 @@ function formatAmount(amount?: number) {
   if (amount == null) return "-";
   return `₹${amount.toLocaleString()}`;
 }
-
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload?.length) {
-    return (
-      <div className="bg-background border border-border rounded-lg p-3 text-xs">
-        <p className="text-muted-foreground mb-1">{label}</p>
-        {payload.map((p: any) => (
-          <p key={p.name} style={{ color: p.color }} className="font-medium">
-            {p.name}: ₹{p.value}L
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
 
 export default function DashboardPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -224,6 +196,8 @@ export default function DashboardPage() {
     }));
   }, [properties]);
 
+  const maxRevenueVal = useMemo(() => Math.max(...revenuePipeline.map(r => Math.max(r.revenue, r.target)), 1), [revenuePipeline]);
+
   const upcomingVisits = useMemo(() => {
     const now = new Date();
     return visits
@@ -239,6 +213,8 @@ export default function DashboardPage() {
       return bDate.getTime() - aDate.getTime();
     });
   }, [leads]);
+
+  const totalDealTypes = useMemo(() => dealTypeData.reduce((sum, d) => sum + d.value, 0), [dealTypeData]);
 
   const statCards = [
     {
@@ -290,7 +266,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div key="revenue-pipeline" className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
+        {/* Revenue Pipeline - Bar chart */}
+        <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="text-sm font-medium text-foreground">Revenue Pipeline</h3>
@@ -298,52 +275,65 @@ export default function DashboardPage() {
             </div>
             <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md">in Lakhs ₹</span>
           </div>
-          <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={revenuePipeline}>
-              <defs>
-                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--foreground))" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="hsl(var(--foreground))" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="target" stroke="hsl(var(--foreground))" strokeWidth={1.5} fill="none" strokeDasharray="4 4" name="Target" />
-              <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#revGrad)" name="Revenue" />
-            </AreaChart>
-          </ResponsiveContainer>
+          <div className="space-y-2">
+            {revenuePipeline.map((item) => (
+              <div key={item.month}>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted-foreground">{item.month}</span>
+                  <span className="text-foreground font-medium">₹{item.revenue}L / ₹{item.target}L target</span>
+                </div>
+                <div className="flex gap-1.5 h-2">
+                  <div className="flex-1 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-foreground/20 rounded-full transition-all"
+                      style={{ width: `${(item.target / maxRevenueVal) * 100}%` }}
+                    />
+                  </div>
+                  <div className="flex-1 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-foreground/50 rounded-full transition-all"
+                      style={{ width: `${(item.revenue / maxRevenueVal) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div key="deals-by-type" className="bg-card border border-border rounded-xl p-5">
+        {/* Deals by Type - Simple pie */}
+        <div className="bg-card border border-border rounded-xl p-5">
           <div className="mb-5">
             <h3 className="text-sm font-medium text-foreground">Deals by Type</h3>
             <p className="text-xs text-muted-foreground mt-0.5">FY 2025–26</p>
           </div>
-          <ResponsiveContainer width="100%" height={140}>
-            <PieChart>
-              <Pie data={dealTypeData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={3} dataKey="value">
-                {dealTypeData.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="space-y-1.5 mt-2">
+          <div className="space-y-2.5">
             {dealTypeData.map((d) => (
-              <div key={d.name} className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-sm shrink-0" style={{ background: d.color }} />
-                <span className="text-xs text-muted-foreground flex-1">{d.name}</span>
-                <span className="text-xs font-medium text-foreground">{d.value}</span>
+              <div key={d.name}>
+                <div className="flex justify-between text-xs mb-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-sm shrink-0" style={{ background: d.color }} />
+                    <span className="text-muted-foreground">{d.name}</span>
+                  </div>
+                  <span className="text-foreground font-medium">{d.value}</span>
+                </div>
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${(d.value / Math.max(totalDealTypes, 1)) * 100}%`, background: d.color }}
+                  />
+                </div>
               </div>
             ))}
+            {dealTypeData.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-6">No data</p>
+            )}
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div key="recent-leads" className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <h3 className="text-sm font-medium text-foreground">Recent Leads</h3>
             <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
@@ -351,7 +341,7 @@ export default function DashboardPage() {
             </button>
           </div>
           <div className="divide-y divide-border">
-            {recentLeads.map((lead) => (
+            {recentLeads.slice(0, 5).map((lead) => (
               <div key={lead.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/50 transition-colors cursor-pointer">
                 <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-foreground shrink-0">
                   {lead.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
@@ -378,13 +368,13 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div key="upcoming-visits" className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <h3 className="text-sm font-medium text-foreground">Upcoming Visits</h3>
             <span className="text-xs text-muted-foreground">{new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
           </div>
           <div className="p-4 space-y-3">
-            {upcomingVisits.map((visit) => (
+            {upcomingVisits.slice(0, 5).map((visit) => (
               <div key={visit.id} className="flex items-center gap-3 bg-muted/40 border border-border rounded-lg p-3 hover:bg-muted/60 transition-colors cursor-pointer">
                 <div className="text-xs text-muted-foreground w-20 shrink-0 font-medium">
                   {visit.time || (visit.date ? new Date(visit.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "-")}

@@ -252,9 +252,9 @@ export default function ClientsPage() {
                   </thead>
                   <tbody className="divide-y divide-border/50">
                     {filteredClients.length > 0 ? (
-                      filteredClients.map((client) => (
+                      filteredClients.map((client, index) => (
                         <tr
-                          key={client.id}
+                          key={client.id || `client-${index}`}
                           className="group hover:bg-muted/30 transition-colors cursor-pointer"
                           onClick={() => setSelected(client)}
                         >
@@ -312,9 +312,9 @@ export default function ClientsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredClients.map((client) => (
+              {filteredClients.map((client, index) => (
                 <div
-                  key={client.id}
+                  key={client.id || `client-${index}`}
                   className="group bg-card border border-border rounded-2xl p-5 hover:border-foreground/20 hover:shadow-xl transition-all cursor-pointer"
                   onClick={() => setSelected(client)}
                 >

@@ -33,7 +33,7 @@ const LeadSchema = new Schema<ILead>(
     notes: String,
     relatedClientId: { type: String, index: true },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true } }
 );
 
 export const Lead: Model<ILead> =
@@ -70,7 +70,7 @@ const PropertySchema = new Schema<IProperty>(
     description: String,
     images: { type: [String], default: [] },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true } }
 );
 
 export const Property: Model<IProperty> =
@@ -100,7 +100,7 @@ const TeamMemberSchema = new Schema<ITeamMember>(
     closed: { type: Number, default: 0 },
     revenue: String,
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true } }
 );
 
 export const TeamMember: Model<ITeamMember> =
@@ -130,7 +130,7 @@ const SiteVisitSchema = new Schema<ISiteVisit>(
     status: { type: String, default: "pending" },
     notes: String,
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true } }
 );
 
 export const SiteVisit: Model<ISiteVisit> =
@@ -160,7 +160,7 @@ const PaymentSchema = new Schema<IPayment>(
     status: { type: String, default: "scheduled" },
     reminderSent: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true } }
 );
 
 export const Payment: Model<IPayment> =
@@ -194,7 +194,7 @@ const ClientSchema = new Schema<IClient>(
     notes: String,
     relatedLeadId: { type: String, index: true },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true } }
 );
 
 export const Client: Model<IClient> =
@@ -222,7 +222,7 @@ const ActivitySchema = new Schema<IActivity>(
     relatedPropertyId: String,
     relatedClientId: String,
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true } }
 );
 
 export const Activity: Model<IActivity> =

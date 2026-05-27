@@ -1,8 +1,7 @@
 "use client";
 
-import { FormEvent, useState, useEffect, useRef } from "react";
+import { FormEvent, useState, useEffect, useRef, useMemo } from "react";
 import { Plus, Phone, Mail, Filter, X, Search, ChevronDown } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { toast } from "sonner";
 import { useLeads, useClients } from "@/lib/hooks/useData";
 
@@ -168,6 +167,8 @@ export default function LeadsPage() {
     count: (leads || []).filter((l) => l.stage === s).length,
   }));
 
+  const maxStageCount = useMemo(() => Math.max(...leadsByStageData.map(d => d.count), 1), [leadsByStageData]);
+
   return (
     <div className="p-4 lg:p-6 space-y-5">
       {/* Stats + Chart */}
@@ -189,13 +190,17 @@ export default function LeadsPage() {
         </div>
         <div className="bg-card border border-border rounded-xl p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Pipeline Distribution</p>
-          <ResponsiveContainer width="100%" height={80}>
-            <BarChart data={leadsByStageData} barSize={20}>
-              <XAxis dataKey="stage" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--foreground))" }} />
-              <Bar dataKey="count" fill="hsl(var(--foreground))" fillOpacity={0.2} radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="flex items-end gap-1.5 h-20">
+            {leadsByStageData.map((item) => (
+              <div key={item.stage} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                <div
+                  className="w-full bg-foreground/20 rounded-t-sm transition-all"
+                  style={{ height: `${(item.count / maxStageCount) * 100}%` }}
+                />
+                <span className="text-[9px] text-muted-foreground leading-none">{item.stage.slice(0, 3)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

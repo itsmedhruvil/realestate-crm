@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Phone, Mail, TrendingUp, Plus, Eye, Edit2, X } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { toast } from "sonner";
 import AddTeamMemberModal from "@/components/AddTeamMemberModal";
 import { useTeam } from "@/lib/hooks/useData";
@@ -115,6 +114,9 @@ export default function TeamPage() {
     [team]
   );
 
+  const maxRevenue = useMemo(() => Math.max(...performanceData.map(d => d.revenue), 1), [performanceData]);
+  const maxLeads = useMemo(() => Math.max(...performanceData.map(d => d.leads), 1), [performanceData]);
+
   return (
     <div className="p-4 lg:p-6 space-y-5">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -136,24 +138,33 @@ export default function TeamPage() {
           <h3 className="text-sm font-medium text-foreground">Team Performance</h3>
           <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md">Revenue in Lakhs ₹</span>
         </div>
-        <ResponsiveContainer width="100%" height={140}>
-          <BarChart data={performanceData} barSize={24}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <Tooltip
-              contentStyle={{
-                background: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: 8,
-                fontSize: 12,
-                color: "hsl(var(--foreground))",
-              }}
-            />
-            <Bar dataKey="revenue" fill="hsl(var(--foreground))" fillOpacity={0.2} radius={[4, 4, 0, 0]} name="Revenue (L)" />
-            <Bar dataKey="leads" fill="hsl(var(--foreground))" fillOpacity={0.08} radius={[4, 4, 0, 0]} name="Leads" />
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="space-y-3">
+          {performanceData.map((item) => (
+            <div key={item.name}>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-foreground font-medium">{item.name}</span>
+                <span className="text-muted-foreground">₹{item.revenue}L · {item.leads} leads</span>
+              </div>
+              <div className="flex gap-2 items-center">
+                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-foreground/20 rounded-full transition-all"
+                    style={{ width: `${(item.revenue / maxRevenue) * 100}%` }}
+                  />
+                </div>
+                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-foreground/10 rounded-full transition-all"
+                    style={{ width: `${(item.leads / maxLeads) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+          {performanceData.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-8">No team performance data</p>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center justify-between">
@@ -211,15 +222,15 @@ export default function TeamPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
                 {[
                   { label: "Email", value: member.email || "-" },
                   { label: "Phone", value: member.phone || "-" },
                   { label: "Joined", value: member.joinedDate || "-" },
                 ].map((item) => (
-                  <div key={item.label} className="bg-muted/50 rounded-lg p-2.5 text-center text-[10px] uppercase tracking-[0.18em]">
-                    <p className="text-[10px] text-muted-foreground">{item.label}</p>
-                    <p className="text-xs font-semibold text-foreground mt-1">{item.value}</p>
+                  <div key={item.label} className="bg-muted/50 rounded-lg p-2.5 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">{item.label}</p>
+                    <p className="text-[11px] font-semibold text-foreground break-all">{item.value}</p>
                   </div>
                 ))}
               </div>
@@ -234,18 +245,20 @@ export default function TeamPage() {
                 </div>
               </div>
 
-              <div className="flex gap-2 flex-wrap">
-                <button className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground py-2 rounded-lg transition-colors">
-                  <Phone className="w-3 h-3" /> Call
-                </button>
-                <button className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground py-2 rounded-lg transition-colors">
-                  <Mail className="w-3 h-3" /> Email
-                </button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex gap-2 flex-1">
+                  <button className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground py-2 rounded-lg transition-colors">
+                    <Phone className="w-3 h-3" /> Call
+                  </button>
+                  <button className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground py-2 rounded-lg transition-colors">
+                    <Mail className="w-3 h-3" /> Email
+                  </button>
+                </div>
                 {isAdmin && (
                   <button
                     type="button"
                     onClick={() => handleDeleteTeamMember(member.id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-red-600 hover:bg-red-700 text-background py-2 rounded-lg transition-colors"
+                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-xs bg-red-600 hover:bg-red-700 text-background py-2 px-4 rounded-lg transition-colors"
                   >
                     Delete
                   </button>

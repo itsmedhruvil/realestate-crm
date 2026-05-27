@@ -125,8 +125,8 @@ export default function SiteVisitsPage() {
             </div>
           </div>
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => (
-              <div key={d} className="text-center text-xs text-muted-foreground py-1">{d}</div>
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
+              <div key={`day-header-${idx}`} className="text-center text-xs text-muted-foreground py-1">{d}</div>
             ))}
           </div>
           <div className="grid grid-cols-7 gap-1">
